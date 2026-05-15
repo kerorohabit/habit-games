@@ -16,7 +16,10 @@ jobs:
           node-version: 18
       - name: Install and build
         run: |
-          mkdir -p www && cp -r index.html title.html images sounds bgm.mp3 se_click.mp3 se_button.mp3 www/ 2>/dev/null; npm init -y
+          mkdir -p www
+          cp -r index.html images bgm.mp3 se_click.mp3 se_button.mp3 www/ 2>/dev/null || true
+          cp title.html www/ 2>/dev/null || true
+          npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "BentoBattle" "com.habit.bentobattle" --web-dir www
           npx cap add android
