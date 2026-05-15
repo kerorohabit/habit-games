@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
       - uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -25,7 +25,7 @@ jobs:
           npx cap add android
           npx cap sync android
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug -Dorg.gradle.jvmargs="-Xmx2g" --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: apk
