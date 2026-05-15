@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>弁当箱大戦</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'M PLUS Rounded 1c',sans-serif;background:#1a1a1a;width:100%;max-width:540px;margin:0 auto;height:100dvh;overflow:hidden;position:relative;}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;}
+.screen.active{display:flex;}
+
+/* BGMボタン */
+#bgmBtn{position:fixed;top:6px;right:6px;z-index:9999;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.4);border-radius:20px;color:white;font-size:11px;font-weight:800;padding:4px 10px;cursor:pointer;font-family:inherit;}
+
+/* タイトル */
+#screen-title{background:#111;justify-content:space-between;}
+.title-bg{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center top;}
+.title-overlay{position:relative;z-index:2;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;height:100%;padding:24px 16px 32px;}
+.title-logo{width:92%;max-width:440px;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.7));animation:logoIn 0.8s ease both;}
+@keyframes logoIn{from{opacity:0;transform:translateY(-20px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+.title-spacer{flex:1;}
+.start-btn-wrap{width:88%;max-width:400px;cursor:pointer;animation:btnPulse 2s ease-in-out infinite;filter:drop-shadow(0 6px 20px rgba(0,0,0,0.6));}
+@keyframes btnPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.03);}}
+.start-btn-wrap img{width:100%;display:block;}
+
+/* マッチング・名前入力 */
+#screen-match{background:linear-gradient(180deg,#3D2B10 0%,#1A1200 100%);overflow:hidden;}
+.match-header{background:#4A9B4A;width:100%;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.back-btn{background:#2D7A2D;border:none;color:white;font-family:inherit;font-size:12px;font-weight:800;padding:5px 10px;border-radius:6px;cursor:pointer;}
+.match-header-title{color:white;font-size:15px;font-weight:800;}
+.match-scroll{flex:1;overflow-y:auto;width:100%;padding:16px;scrollbar-width:none;}
+.match-scroll::-webkit-scrollbar{display:none;}
+.input-section{background:rgba(255,255,255,0.1);border:2px solid rgba(255,200,100,0.3);border-radius:14px;padding:16px;margin-bottom:14px;}
+.input-label{color:#FFD080;font-size:13px;font-weight:800;margin-bottom:8px;display:block;}
+.name-input{width:100%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,200,100,0.5);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:16px;font-weight:700;color:white;outline:none;}
+.name-input::placeholder{color:rgba(255,255,255,0.4);}
+.faction-section{background:rgba(255,255,255,0.1);border:2px solid rgba(255,200,100,0.3);border-radius:14px;padding:16px;margin-bottom:14px;}
+.faction-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.faction-card{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:all 0.15s;}
+.faction-card.selected{border-color:#FFD080;background:rgba(255,208,128,0.15);}
+.faction-icon{font-size:28px;margin-bottom:4px;}
+.faction-name{color:white;font-size:12px;font-weight:800;margin-bottom:4px;}
+.faction-desc{color:rgba(255,255,255,0.6);font-size:10px;line-height:1.4;}
+.faction-bonus{color:#FFD080;font-size:10px;font-weight:700;margin-top:4px;}
+.match-btn{width:100%;border:3px solid;border-radius:14px;padding:14px;font-family:inherit;font-size:18px;font-weight:900;color:white;cursor:pointer;margin-bottom:10px;transition:all 0.15s;letter-spacing:2px;}
+.match-btn.online{background:linear-gradient(135deg,#FF6600,#CC4400);border-color:#FF9944;box-shadow:0 4px 16px rgba(255,102,0,0.4);}
+.match-btn.cpu{background:linear-gradient(135deg,#4488CC,#2255AA);border-color:#88AADD;box-shadow:0 4px 16px rgba(68,136,204,0.4);}
+.match-btn.waiting{background:linear-gradient(135deg,#888,#555);border-color:#AAA;animation:waitPulse 1.2s ease-in-out infinite;}
+@keyframes waitPulse{0%,100%{opacity:1;}50%{opacity:0.7;}}
+.howto-section{background:rgba(255,255,255,0.08);border:2px solid rgba(255,200,100,0.2);border-radius:14px;padding:16px;}
+.howto-title{color:#FFD080;font-size:14px;font-weight:900;margin-bottom:12px;text-align:center;letter-spacing:2px;}
+.howto-item{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;}
+.howto-num{background:#FF6600;color:white;font-size:11px;font-weight:900;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.howto-text{color:rgba(255,255,255,0.85);font-size:12px;line-height:1.6;}
+.howto-text strong{color:#FFD080;font-weight:800;}
+.howto-divider{height:1px;background:rgba(255,200,100,0.2);margin:12px 0;}
+.life-system{background:rgba(255,102,0,0.15);border:1px solid rgba(255,102,0,0.3);border-radius:10px;padding:10px 12px;margin-top:10px;}
+.life-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.life-row:last-child{margin-bottom:0;}
+.life-badge{color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;flex-shrink:0;}
+.life-desc{color:rgba(255,255,255,0.8);font-size:11px;}
+
+/* バトル画面 */
+#screen-battle{background:#D4EED4;}
+.b-header{background:#4A9B4A;color:white;display:flex;align-items:center;justify-content:space-between;padding:4px 8px;gap:6px;flex-shrink:0;width:100%;}
+.b-turn-label{background:#2D7A2D;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:800;}
+.b-title{font-size:13px;font-weight:800;flex:1;text-align:center;}
+.b-phase-badge{background:#FF6600;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:900;color:white;}
+.b-phase-badge.def-phase{background:#2255AA;}
+
+.b-turn-area{background:#B8DDB8;display:flex;align-items:center;padding:3px 8px;gap:6px;flex-shrink:0;width:100%;}
+.b-player-tag{background:white;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700;color:#333;display:flex;align-items:center;gap:4px;}
+.b-player-tag .dot{width:8px;height:8px;border-radius:50%;background:#999;}
+.b-player-tag.active .dot{background:#FF6600;}
+.b-turn-arrow{color:#FF6600;font-size:18px;}
+
+.b-main{flex:1;display:flex;overflow:hidden;width:100%;}
+.b-field{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.b-enemy{flex:1;background:#C8E8C8;padding:6px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;border-bottom:2px solid #8BC88B;}
+.b-total{background:#B0D8B0;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 8px;flex-shrink:0;}
+.b-total-box{background:#F0F8F0;border:2px solid #6AB06A;border-radius:6px;padding:3px 12px;font-size:14px;font-weight:900;color:#2D5A2D;text-align:center;min-width:75px;}
+.b-total-box .lbl{font-size:9px;font-weight:600;color:#5A8A5A;display:block;margin-bottom:1px;}
+.b-my{flex:1;background:#D8EED8;padding:6px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;}
+
+/* サイドバー */
+.b-sidebar{width:112px;background:#A8D8A8;display:flex;flex-direction:column;flex-shrink:0;border-left:2px solid #8BC88B;}
+.b-pstat{flex:1;padding:6px;display:flex;flex-direction:column;gap:2px;border-bottom:2px solid #8BC88B;}
+.b-pstat:last-child{border-bottom:none;}
+.b-pname{font-size:11px;font-weight:800;color:#1A3A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.b-srow{display:flex;align-items:center;gap:4px;}
+.b-slabel{color:#5A8A5A;font-size:9px;min-width:18px;}
+.b-hp{font-size:13px;font-weight:900;color:#CC2222;}
+.b-mp{font-size:12px;font-weight:900;color:#6644AA;}
+
+/* タイマー（サイドバー内） */
+.b-timer-wrap{display:flex;align-items:center;gap:4px;margin-top:2px;}
+.b-timer{background:#1A5A1A;color:#AAFFAA;font-size:16px;font-weight:900;padding:2px 8px;border-radius:6px;min-width:36px;text-align:center;}
+.b-timer.urgent{background:#8B0000;color:#FFAAAA;animation:tPulse 0.5s ease-in-out infinite;}
+@keyframes tPulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+
+/* アクションボタン（サイドバー内） */
+.b-actions{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.b-act-btn{width:100%;border:none;border-radius:8px;font-family:inherit;font-size:11px;font-weight:900;padding:7px 4px;cursor:pointer;transition:all 0.15s;text-align:center;}
+.b-act-btn:active{transform:scale(0.95);}
+.b-act-btn.confirm{background:#FF6600;color:white;}
+.b-act-btn.eat-mode{background:#FFB347;color:white;}
+.b-act-btn.eat-mode.active-eat{background:#FF6600;box-shadow:0 0 0 2px white;}
+.b-act-btn.end{background:#2D7A2D;color:white;}
+.b-act-btn:disabled{background:#AAA;color:#666;cursor:not-allowed;}
+
+/* フィールドカード */
+.f-card{background:white;border:2px solid #AAD4AA;border-radius:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.08);}
+.f-card.attack{border-color:#FF8844;background:#FFF8F5;}
+.f-card.extra{border-color:#FFAA22;background:#FFFBF0;}
+.f-card.defense{border-color:#4488CC;background:#F5F8FF;}
+.f-card.miracle{border-color:#9966CC;background:#F8F5FF;}
+.f-card.item{border-color:#44AA66;background:#F5FFF8;}
+.f-card.reflect{border-color:#CC4499;background:#FFF5FA;}
+.f-card-img{width:36px;height:36px;border-radius:5px;background:#E8F0E8;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+.f-card-img img{width:100%;height:100%;object-fit:cover;}
+.f-card-info{flex:1;overflow:hidden;}
+.f-card-name{font-size:11px;font-weight:800;color:#1A3A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.f-card-sub{font-size:9px;color:#6A8A6A;margin-top:1px;}
+.f-card-val{font-size:14px;font-weight:900;color:#CC4400;flex-shrink:0;}
+
+/* 手札エリア */
+.b-hand{background:#9AC89A;border-top:2px solid #6AAA6A;padding:6px;flex-shrink:0;width:100%;}
+.b-hand-scroll{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.b-hand-scroll::-webkit-scrollbar{display:none;}
+.h-card{background:white;border:2px solid #AAD4AA;border-radius:10px;min-width:72px;max-width:72px;padding:5px 4px;text-align:center;cursor:pointer;transition:all 0.15s;flex-shrink:0;position:relative;}
+.h-card.selected{border-color:#FF6600;box-shadow:0 4px 12px rgba(255,102,0,0.4);filter:brightness(0.75);}
+.h-card.eat-target{border-color:#FFB347;box-shadow:0 0 0 2px #FFB347;animation:eatGlow 0.8s ease-in-out infinite;}
+@keyframes eatGlow{0%,100%{box-shadow:0 0 0 2px #FFB347;}50%{box-shadow:0 0 8px 4px #FFB347;}}
+.h-card.attack{border-top:3px solid #FF8844;}
+.h-card.extra{border-top:3px solid #FFAA22;}
+.h-card.defense{border-top:3px solid #4488CC;}
+.h-card.miracle{border-top:3px solid #9966CC;}
+.h-card.item{border-top:3px solid #44AA66;}
+.h-card.reflect{border-top:3px solid #CC4499;}
+.h-card-img{width:52px;height:52px;border-radius:6px;background:#E8F0E8;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 3px;overflow:hidden;}
+.h-card-img img{width:100%;height:100%;object-fit:cover;}
+.h-card-name{font-size:9px;font-weight:800;color:#1A3A1A;margin-bottom:2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.h-card-val{font-size:11px;font-weight:900;}
+
+/* カード詳細フロート */
+#cardDetail{position:fixed;top:90px;right:0;width:200px;max-width:200px;background:rgba(20,10,0,0.97);border:2px solid #FF9944;border-right:none;border-radius:12px 0 0 12px;padding:10px 12px;z-index:500;display:none;animation:slideFromRight 0.2s ease;}
+@keyframes slideFromRight{from{transform:translateX(100%);}to{transform:translateX(0);}}
+#cardDetail.active{display:block;}
+.cd-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cd-img{width:48px;height:48px;border-radius:8px;background:#333;overflow:hidden;flex-shrink:0;}
+.cd-img img{width:100%;height:100%;object-fit:cover;}
+.cd-title{flex:1;overflow:hidden;}
+.cd-name{color:white;font-size:12px;font-weight:900;margin-bottom:3px;line-height:1.2;}
+.cd-type-badge{display:inline-block;padding:1px 6px;border-radius:5px;font-size:10px;font-weight:800;}
+.cd-close{background:rgba(255,255,255,0.15);border:none;color:white;font-size:14px;width:24px;height:24px;border-radius:50%;cursor:pointer;font-family:inherit;flex-shrink:0;}
+.cd-body{color:rgba(255,255,255,0.85);font-size:11px;line-height:1.6;}
+.cd-row{display:flex;gap:6px;margin-bottom:4px;align-items:center;}
+.cd-label{color:#FFD080;font-size:10px;font-weight:800;min-width:30px;}
+.cd-val{color:white;font-size:11px;font-weight:700;}
+.cd-effect-box{background:rgba(255,200,100,0.1);border:1px solid rgba(255,200,100,0.3);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:10px;color:rgba(255,255,255,0.9);line-height:1.5;}
+
+/* ターンフェーズ大バナー */
+#phase-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;height:100%;z-index:150;display:none;align-items:center;justify-content:center;pointer-events:none;}
+#phase-banner.active{display:flex;}
+.phase-banner-box{background:rgba(0,0,0,0.75);border-radius:20px;padding:20px 40px;text-align:center;animation:bannerPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+.phase-banner-main{font-size:28px;font-weight:900;color:white;letter-spacing:3px;margin-bottom:4px;}
+.phase-banner-sub{font-size:14px;font-weight:700;color:rgba(255,255,255,0.7);}
+.phase-atk .phase-banner-main{color:#FF8844;text-shadow:0 0 20px rgba(255,100,0,0.8);}
+.phase-def .phase-banner-main{color:#88AAFF;text-shadow:0 0 20px rgba(100,150,255,0.8);}
+.phase-wait .phase-banner-main{color:#AAFFAA;text-shadow:0 0 20px rgba(100,255,100,0.6);}
+@keyframes bannerPop{from{opacity:0;transform:scale(0.7);}to{opacity:1;transform:scale(1);}}
+
+/* ターン終了カード演出 */
+#card-reveal{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;height:100%;z-index:140;display:none;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,0.5);}
+#card-reveal.active{display:flex;}
+.reveal-card{position:absolute;width:100px;height:100px;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6);border:3px solid white;opacity:0;animation:revealCard 2s ease both;}
+.reveal-card img{width:100%;height:100%;object-fit:cover;}
+@keyframes revealCard{0%{opacity:0;transform:scale(0.5) translateY(30px);}15%{opacity:1;transform:scale(1.1) translateY(0);}25%{transform:scale(1) translateY(0);}75%{opacity:1;transform:scale(1) translateY(-10px);}100%{opacity:0;transform:scale(0.9) translateY(-30px);}}
+
+/* ダメージエフェクト */
+.dmg-effect{position:fixed;left:50%;transform:translateX(-50%);top:45%;font-size:42px;font-weight:900;color:#FF3333;text-shadow:0 0 20px rgba(255,0,0,0.8),2px 2px 0 #000;z-index:300;pointer-events:none;animation:dmgPop 1.2s ease both;}
+.dmg-effect.heal{color:#44FF88;text-shadow:0 0 20px rgba(0,255,100,0.8),2px 2px 0 #000;}
+@keyframes dmgPop{0%{opacity:0;transform:translateX(-50%) scale(0.5) translateY(0);}20%{opacity:1;transform:translateX(-50%) scale(1.3) translateY(0);}80%{opacity:1;transform:translateX(-50%) scale(1) translateY(-40px);}100%{opacity:0;transform:translateX(-50%) scale(0.8) translateY(-80px);}}
+
+/* 演出オーバーレイ */
+#overlay-result{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;height:100%;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;}
+#overlay-result.active{display:flex;}
+.result-img{width:90%;max-width:440px;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.8));}
+.result-img.animate{animation:resultIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes resultIn{from{opacity:0;transform:scale(0.5);}to{opacity:1;transform:scale(1);}}
+.result-sub{color:rgba(255,255,255,0.9);font-size:13px;font-weight:700;text-align:center;}
+.result-close{background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.4);border-radius:12px;color:white;font-family:inherit;font-size:15px;font-weight:800;padding:12px 40px;cursor:pointer;}
+
+/* CPU戦バッジ */
+.cpu-badge{background:#4488CC;color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<!-- BGM制御ボタン（全画面共通） -->
+<button id="bgmBtn" onclick="toggleBGM()">🎵 BGM ON</button>
+<audio id="bgm" loop></audio>
+<audio id="se" src="se_click.mp3" preload="auto"></audio>
+<audio id="se_btn" src="se_button.mp3" preload="auto"></audio>
+
+<!-- ===== タイトル画面 ===== -->
+<div id="screen-title" class="screen active">
+  <img class="title-bg" src="images/ui/title_bg.png" alt="背景">
+  <div class="title-overlay">
+    <img class="title-logo" src="images/ui/title_logo.png" alt="弁当箱大戦">
+    <div class="title-spacer"></div>
+    <div class="start-btn-wrap" onclick="showScreen('match')">
+      <img src="images/ui/btn_gamestart.png" alt="ゲームスタート">
+    </div>
+  </div>
+</div>
+
+<!-- ===== マッチング画面 ===== -->
+<div id="screen-match" class="screen">
+  <div class="match-header">
+    <button class="back-btn" onclick="showScreen('title')">← 戻る</button>
+    <div class="match-header-title">🍱 弁当箱大戦</div>
+  </div>
+  <div class="match-scroll">
+    <div class="input-section">
+      <span class="input-label">⚔️ プレイヤー名を入力</span>
+      <input class="name-input" id="playerName" type="text" placeholder="例：唐揚げ将軍" maxlength="12">
+    </div>
+    <div class="faction-section">
+      <span class="input-label">🏴 陣営を選択</span>
+      <div class="faction-grid">
+        <div class="faction-card selected" onclick="selectFaction(this,'washoku')">
+          <div class="faction-icon">🍱</div>
+          <div class="faction-name">和食連合</div>
+          <div class="faction-desc">バランス型・守りが得意</div>
+          <div class="faction-bonus">防御力 +10%</div>
+        </div>
+        <div class="faction-card" onclick="selectFaction(this,'youshoku')">
+          <div class="faction-icon">🍖</div>
+          <div class="faction-name">洋食帝国</div>
+          <div class="faction-desc">攻撃特化・派手な戦術</div>
+          <div class="faction-bonus">攻撃力 +10%</div>
+        </div>
+        <div class="faction-card" onclick="selectFaction(this,'chuuka')">
+          <div class="faction-icon">🥟</div>
+          <div class="faction-name">中華同盟</div>
+          <div class="faction-desc">連携・旨味回収が得意</div>
+          <div class="faction-bonus">旨味回復 +1/T</div>
+        </div>
+        <div class="faction-card" onclick="selectFaction(this,'ethnic')">
+          <div class="faction-icon">🌶️</div>
+          <div class="faction-name">エスニック解放軍</div>
+          <div class="faction-desc">奇襲・変則戦術</div>
+          <div class="faction-bonus">反射確率 +10%</div>
+        </div>
+      </div>
+    </div>
+    <button class="match-btn online" id="matchOnlineBtn" onclick="startOnlineMatch()">⚔️ オンラインマッチング</button>
+    <button class="match-btn cpu" onclick="startCPUMatch()">🤖 CPU対戦</button>
+    <div class="howto-section">
+      <div class="howto-title">📖 遊び方</div>
+      <div class="howto-item"><div class="howto-num">1</div><div class="howto-text"><strong>攻撃フェーズ</strong>と<strong>防御フェーズ</strong>が交互に進行。攻撃カードと防御カードを同時に出すことはできません。</div></div>
+      <div class="howto-item"><div class="howto-num">2</div><div class="howto-text">80種のカードからランダムドロー。手札上限8枚。使った枚数分ドローします。</div></div>
+      <div class="howto-item"><div class="howto-num">3</div><div class="howto-text"><strong>「食べる」</strong>ボタンを押してカードを選ぶと除外。弱カードを食べて後半を強化する戦略。</div></div>
+      <div class="howto-item"><div class="howto-num">4</div><div class="howto-text">各ターン<strong>20秒以内</strong>に操作。時間切れはターンエンド扱い。</div></div>
+      <div class="howto-divider"></div>
+      <div class="howto-title" style="font-size:13px;margin-bottom:10px;">❤️ ライフシステム</div>
+      <div class="life-system">
+        <div class="life-row"><span class="life-badge" style="background:#CC2222">HP40</span><span class="life-desc">試合開始時</span></div>
+        <div class="life-row"><span class="life-badge" style="background:#CC6600">HP0→20</span><span class="life-desc">🍳 朝ごはん完食！HP20で復活</span></div>
+        <div class="life-row"><span class="life-badge" style="background:#886600">HP0→10</span><span class="life-desc">🍱 昼食完食！HP10で復活</span></div>
+        <div class="life-row"><span class="life-badge" style="background:#8B0000">HP0→敗北</span><span class="life-desc">🎉 ごちそうさまでした！</span></div>
+      </div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ===== バトル画面 ===== -->
+<div id="screen-battle" class="screen">
+  <div class="b-header">
+    <div class="b-turn-label">TURN <span id="turnNum">1</span></div>
+    <div class="b-title">🍱 弁当箱大戦</div>
+    <div class="b-phase-badge" id="phaseBadge">攻撃フェーズ</div>
+  </div>
+  <div class="b-turn-area">
+    <div class="b-player-tag" id="enemyTag"><span class="dot"></span><span id="enemyNameDisp">相手</span></div>
+    <div class="b-turn-arrow">→</div>
+    <div class="b-player-tag active" id="myTag"><span class="dot"></span><span id="myNameDisp">あなた</span></div>
+  </div>
+  <div class="b-main">
+    <div class="b-field">
+      <div class="b-enemy" id="enemyField"></div>
+      <div class="b-total">
+        <div class="b-total-box"><span class="lbl">総攻撃力</span><span id="totalAtk">攻0</span></div>
+        <div class="b-total-box" style="color:#2255AA;border-color:#4488CC"><span class="lbl" style="color:#4488AA">総守備力</span><span id="totalDef">守0</span></div>
+      </div>
+      <div class="b-my" id="myField"></div>
+    </div>
+    <div class="b-sidebar">
+      <!-- 相手ステータス -->
+      <div class="b-pstat">
+        <div class="b-pname" id="enemyNameSide">🥟 相手</div>
+        <div class="b-srow"><span class="b-slabel">HP</span><span class="b-hp" id="enemyHP">40</span></div>
+        <div class="b-srow"><span class="b-slabel">旨味</span><span class="b-mp" id="enemyMP">5</span></div>
+        <div class="b-srow"><span class="b-slabel">命</span><span id="enemyLife" style="font-size:11px">❤️❤️❤️</span></div>
+      </div>
+      <!-- 自分ステータス＋タイマー＋ボタン -->
+      <div class="b-pstat">
+        <div class="b-pname" id="myNameSide">🍱 あなた</div>
+        <div class="b-srow"><span class="b-slabel">HP</span><span class="b-hp" style="color:#2266CC" id="myHP">40</span></div>
+        <div class="b-srow"><span class="b-slabel">旨味</span><span class="b-mp" id="myMP">5</span></div>
+        <div class="b-srow"><span class="b-slabel">命</span><span id="myLife" style="font-size:11px">❤️❤️❤️</span></div>
+        <div class="b-timer-wrap">
+          <span class="b-slabel">残</span>
+          <div class="b-timer" id="timer">20</div>
+        </div>
+        <div class="b-actions">
+          <button class="b-act-btn confirm" id="btnConfirm" onclick="confirmAction()">⚔️ 攻撃</button>
+          <button class="b-act-btn eat-mode" id="btnEat" onclick="toggleEatMode()">🍽 食べる</button>
+          <button class="b-act-btn end" onclick="endTurn()">✅ 終了</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手札 -->
+  <div class="b-hand">
+    <div class="b-hand-scroll" id="handArea"></div>
+  </div>
+
+  <!-- バトルログ -->
+  <div style="background:#4A9B4A;padding:4px 10px;flex-shrink:0;width:100%;">
+    <div id="battleLog" style="background:#2D7A2D;border-radius:6px;padding:4px 8px;font-size:10px;color:#CCFFCC;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">バトル開始！</div>
+  </div>
+</div>
+
+<!-- フェーズバナー -->
+<div id="phase-banner">
+  <div class="phase-banner-box" id="phaseBannerBox">
+    <div class="phase-banner-main" id="phaseBannerMain">攻撃フェーズ</div>
+    <div class="phase-banner-sub" id="phaseBannerSub">カードを選んで攻撃！</div>
+  </div>
+</div>
+
+<!-- カード演出 -->
+<div id="card-reveal"></div>
+
+<!-- カード詳細フロート -->
+<div id="cardDetail">
+  <div class="cd-header">
+    <div class="cd-img"><img id="cdImg" src="" alt=""></div>
+    <div class="cd-title">
+      <div class="cd-name" id="cdName">-</div>
+      <span class="cd-type-badge" id="cdTypeBadge">-</span>
+    </div>
+    <button class="cd-close" onclick="closeCardDetail()">✕</button>
+  </div>
+  <div class="cd-body">
+    <div class="cd-row"><span class="cd-label">種別</span><span class="cd-val" id="cdType">-</span></div>
+    <div class="cd-row"><span class="cd-label">属性</span><span class="cd-val" id="cdAttr">-</span></div>
+    <div class="cd-row"><span class="cd-label">数値</span><span class="cd-val" id="cdVal">-</span></div>
+    <div class="cd-effect-box" id="cdEffect">-</div>
+  </div>
+</div>
+
+<!-- 演出オーバーレイ -->
+<div id="overlay-result">
+  <img class="result-img" id="resultImg" src="" alt="">
+  <div class="result-sub" id="resultSub"></div>
+  <button class="result-close" onclick="closeResult()">続ける</button>
+</div>
+
+<script>
+// ===== カードデータ =====
+const CARDS = [
+  {id:1,name:"唐揚げ砲",type:"attack",attr:"fire",val:9,img:"images/cards/card_01_karaage_hou.png",effect:"🔥揚げ物属性の攻撃。🌊出汁属性の防具では防げない。ザクザクの衣から放たれる熱い一撃！"},
+  {id:2,name:"天ぷら乱打",type:"attack",attr:"fire",val:13,img:"images/cards/card_02_tempura_randa.png",effect:"🔥揚げ物属性の強力攻撃。サクサクの衣をまとったエビが連続で叩きつける！"},
+  {id:3,name:"フライ突撃",type:"attack",attr:"fire",val:11,img:"images/cards/card_03_fry_totsugeki.png",effect:"🔥揚げ物属性の突撃攻撃。カリカリのフライが全速力で突っ込む！"},
+  {id:4,name:"コロッケ投擲",type:"attack",attr:"fire",val:7,img:"images/cards/card_04_croquette_tosha.png",effect:"🔥揚げ物属性の投擲攻撃。ほくほくコロッケが高速回転しながら飛んでくる！"},
+  {id:5,name:"出汁波動",type:"attack",attr:"dashi",val:9,img:"images/cards/card_05_dashi_hado.png",effect:"🌊出汁属性の攻撃。黄金の出汁が波となって押し寄せる。🌿薬味属性の防具では防げない。"},
+  {id:6,name:"煮込み圧力",type:"attack",attr:"dashi",val:13,img:"images/cards/card_06_nikomi_atsuryoku.png",effect:"🌊出汁属性の強力攻撃。長時間煮込まれた圧力が一気に解放される！"},
+  {id:7,name:"おでん砲台",type:"attack",attr:"dashi",val:11,img:"images/cards/card_07_oden_hodai.png",effect:"🌊出汁属性の砲台攻撃。大根・卵・こんにゃくが砲弾となって連射される！"},
+  {id:8,name:"昆布鞭打ち",type:"attack",attr:"dashi",val:7,img:"images/cards/card_08_konbu_muchi.png",effect:"🌊出汁属性の鞭攻撃。長い昆布がしなやかにしなって相手を打つ！"},
+  {id:9,name:"山椒爆弾",type:"attack",attr:"herb",val:9,img:"images/cards/card_09_sansho_bakudan.png",effect:"🌿薬味属性の爆弾攻撃。痺れるような山椒の刺激が爆発する！🔥揚げ物属性の防具では防げない。"},
+  {id:10,name:"わさび直撃",type:"attack",attr:"herb",val:11,img:"images/cards/card_10_wasabi_chokusen.png",effect:"🌿薬味属性の直撃攻撃。鼻をつんざく辛さのわさびが直撃する！"},
+  {id:11,name:"生姜投げ",type:"attack",attr:"herb",val:7,img:"images/cards/card_11_shoga_nage.png",effect:"🌿薬味属性の投擲攻撃。ひねった生姜が回転しながら飛んでくる！"},
+  {id:12,name:"米つぶ弾",type:"attack",attr:"rice",val:7,img:"images/cards/card_12_kome_tsubu_dan.png",effect:"🍚米属性の連続攻撃。無数の米粒が弾丸となって降り注ぐ！⚡発酵属性の防具では防げない。"},
+  {id:13,name:"おにぎり投擲",type:"attack",attr:"rice",val:11,img:"images/cards/card_13_onigiri_tosha.png",effect:"🍚米属性の投擲攻撃。ぎゅっと握られたおにぎりが高速で飛んでくる！"},
+  {id:14,name:"チャーハン嵐",type:"attack",attr:"rice",val:13,img:"images/cards/card_14_chahan_arashi.png",effect:"🍚米属性の嵐攻撃。熱した中華鍋から米粒の竜巻が発生する！"},
+  {id:15,name:"発酵ガス",type:"attack",attr:"ferment",val:11,img:"images/cards/card_15_hakko_gas.png",effect:"⚡発酵属性の毒霧攻撃。発酵によって生まれた強烈なガスが広がる！🌸甘味属性の防具では防げない。"},
+  {id:16,name:"納豆ねばり",type:"attack",attr:"ferment",val:9,img:"images/cards/card_16_natto_nebari.png",effect:"⚡発酵属性の拘束攻撃。強烈な糸が相手に絡みつき行動を妨害する！"},
+  {id:17,name:"キムチ爆発",type:"attack",attr:"ferment",val:13,img:"images/cards/card_17_kimuchi_bakuhatsu.png",effect:"⚡発酵属性の爆発攻撃。激辛キムチの発酵エネルギーが大爆発する！"},
+  {id:18,name:"卵焼きスマッシュ",type:"attack",attr:"sweet",val:9,img:"images/cards/card_18_tamagoyaki_smash.png",effect:"🌸甘味属性のスマッシュ攻撃。ふわふわの卵焼きが強烈にスマッシュする！🍚米属性の防具では防げない。"},
+  {id:19,name:"プリン崩し",type:"attack",attr:"sweet",val:7,img:"images/cards/card_19_purin_kuzushi.png",effect:"🌸甘味属性の崩し攻撃。プルプルのプリンがなだれのように崩れ落ちる！"},
+  {id:20,name:"みたらし砲",type:"attack",attr:"sweet",val:11,img:"images/cards/card_20_mitarashi_hou.png",effect:"🌸甘味属性の砲撃。甘辛みたらしダレをまとった団子が砲弾となる！"},
+  {id:21,name:"ソース追いがけ",type:"extra",attr:"none",val:6,img:"images/cards/card_21_sauce_oigake.png",effect:"攻撃カードに重ねて使用。ウスターソースで攻撃力+6！コクと旨味が追加される。"},
+  {id:22,name:"七味トッピング",type:"extra",attr:"none",val:9,img:"images/cards/card_22_shichimi_topping.png",effect:"攻撃カードに重ねて使用。七種の辛みで攻撃力+9！激辛トッピングが追加ダメージを与える。"},
+  {id:23,name:"特製タレ",type:"extra",attr:"none",val:7,img:"images/cards/card_23_tokusei_tare.png",effect:"攻撃カードに重ねて使用。秘伝のタレで攻撃力+7。さらに属性を強化する効果もある！"},
+  {id:24,name:"大盛りトッピング",type:"extra",attr:"none",val:11,img:"images/cards/card_24_omori_topping.png",effect:"攻撃カードに重ねて使用。旨味2消費で攻撃力+11！豪快な大盛りで圧倒する。"},
+  {id:25,name:"マヨネーズ爆撃",type:"extra",attr:"none",val:8,img:"images/cards/card_25_mayo_bakugeki.png",effect:"攻撃カードに重ねて使用。クリーミーなマヨで攻撃力+8！まろやかな爆撃を加える。"},
+  {id:26,name:"胡椒追い打ち",type:"extra",attr:"none",val:6,img:"images/cards/card_26_kosho_oiuchi.png",effect:"攻撃カードに重ねて使用。胡椒で攻撃力+6。さらに毒状態を付与する効果あり！"},
+  {id:27,name:"追い醤油",type:"extra",attr:"none",val:7,img:"images/cards/card_27_oi_shoyu.png",effect:"攻撃カードに重ねて使用。追いがけ醤油で攻撃力+7！旨みが深まり一段階強化される。"},
+  {id:28,name:"秘伝スパイス",type:"extra",attr:"none",val:10,img:"images/cards/card_28_hiden_spice.png",effect:"攻撃カードに重ねて使用。旨味1消費で攻撃力+10！企業秘密の神スパイスを投入する。"},
+  {id:29,name:"柚子胡椒仕上げ",type:"extra",attr:"none",val:8,img:"images/cards/card_29_yuzukosho_shiage.png",effect:"攻撃カードに重ねて使用。柚子胡椒で攻撃力+8。さらに属性を強化する効果あり！"},
+  {id:30,name:"禁断の旨味爆弾",type:"extra",attr:"none",val:16,img:"images/cards/card_30_kindan_umami_baku.png",effect:"攻撃カードに重ねて使用。旨味4消費で攻撃力+16！禁断の旨味が爆発する最強トッピング！"},
+  {id:31,name:"アルミカップ盾",type:"defense",attr:"sweet",val:8,img:"images/cards/card_31_alumicup_tate.png",effect:"🌸甘味属性の防御。攻撃を8防ぐ。複数枚重ねて使用可能！"},
+  {id:32,name:"バランシート装甲",type:"defense",attr:"rice",val:10,img:"images/cards/card_32_baran_armor.png",effect:"🍚米属性の防御。攻撃を10防ぐ。複数枚重ねて使用可能！"},
+  {id:33,name:"海苔の壁",type:"defense",attr:"herb",val:6,img:"images/cards/card_33_nori_kabe.png",effect:"🌿薬味属性の防御。攻撃を6防ぐ。軽量だが複数枚で壁を作れる！"},
+  {id:34,name:"揚げ衣バリア",type:"defense",attr:"fire",val:12,img:"images/cards/card_34_koromo_barrier.png",effect:"🔥揚げ物属性の防御。攻撃を12防ぐ。カリカリの衣が硬いバリアを形成！"},
+  {id:35,name:"昆布出汁膜",type:"defense",attr:"dashi",val:8,img:"images/cards/card_35_konbu_dashi_maku.png",effect:"🌊出汁属性の防御。攻撃を8防ぐ。透明な出汁の膜が攻撃を受け止める！"},
+  {id:36,name:"漬物バリケード",type:"defense",attr:"ferment",val:10,img:"images/cards/card_36_tsukemono_barricade.png",effect:"⚡発酵属性の防御。攻撃を10防ぐ。発酵パワーでバリケードを築く！"},
+  {id:37,name:"厚焼き玉子盾",type:"defense",attr:"sweet",val:12,img:"images/cards/card_37_atsuyaki_tamago_tate.png",effect:"🌸甘味属性の重防御。攻撃を12防ぐ。ふわふわの厚さが衝撃を吸収する！"},
+  {id:38,name:"酢飯クッション",type:"defense",attr:"rice",val:8,img:"images/cards/card_38_sumeshi_cushion.png",effect:"🍚米属性の防御。攻撃を8防ぐ。酢飯のクッション性が衝撃を和らげる！"},
+  {id:39,name:"大葉カーテン",type:"defense",attr:"herb",val:10,img:"images/cards/card_39_ooba_curtain.png",effect:"🌿薬味属性の防御。攻撃を10防ぐ。大きな葉がカーテンのように広がる！"},
+  {id:40,name:"衣サンドバッグ",type:"defense",attr:"fire",val:8,img:"images/cards/card_40_koromo_sandbag.png",effect:"🔥揚げ物属性の防御。攻撃を8防ぐ。分厚い衣がサンドバッグのように受け止める！"},
+  {id:41,name:"だし巻きアーマー",type:"defense",attr:"dashi",val:14,img:"images/cards/card_41_dashimaki_armor.png",effect:"🌊出汁属性の重防御。旨味1消費で攻撃を14防ぐ。だし巻き卵の層が鎧になる！"},
+  {id:42,name:"糠床要塞",type:"defense",attr:"ferment",val:14,img:"images/cards/card_42_nukadoko_yosai.png",effect:"⚡発酵属性の重防御。旨味1消費で攻撃を14防ぐ。長年育てた糠床が鉄壁の要塞に！"},
+  {id:43,name:"全属性おひつ",type:"defense",attr:"none",val:10,img:"images/cards/card_43_zenzoku_ohitsu.png",effect:"全属性対応の防御。属性を問わず攻撃を10防ぐ万能防具！"},
+  {id:44,name:"竹の皮シールド",type:"defense",attr:"none",val:6,img:"images/cards/card_44_take_no_kawa_shield.png",effect:"全属性対応の軽量防御。属性を問わず攻撃を6防ぐ。枚数で補え！"},
+  {id:45,name:"重箱装甲",type:"defense",attr:"none",val:16,img:"images/cards/card_45_jubako_armor.png",effect:"全属性対応の最強防御。旨味2消費で攻撃を16防ぐ！重厚な重箱の装甲は難攻不落。"},
+  {id:46,name:"電子レンジ召喚",type:"miracle",attr:"none",val:0,cost:3,img:"images/cards/card_46_denshi_renji_shokan.png",effect:"旨味3消費。全属性10ダメージ（防御不可）！電子レンジの強力な電磁波が相手を直撃する。"},
+  {id:47,name:"冷蔵庫封印",type:"miracle",attr:"none",val:0,cost:4,img:"images/cards/card_47_reizoko_fuin.png",effect:"旨味4消費。相手の手札をランダムで1枚凍結（1ターン使用不可）。冷気で相手の行動を縛る！"},
+  {id:48,name:"食品添加物",type:"miracle",attr:"none",val:0,cost:2,img:"images/cards/card_48_shokuhin_tenkabutsu.png",effect:"旨味2消費。相手に毒状態を付与（毎ターン3ダメージ）。解除されるまでじわじわ削る！"},
+  {id:49,name:"賞味期限切れ",type:"miracle",attr:"none",val:0,cost:5,img:"images/cards/card_49_shoumi_kigen_gire.png",effect:"旨味5消費。相手の現在HPを半分に！腐敗の呪いが相手を蝕む強力な奇跡。"},
+  {id:50,name:"弁当箱シェイク",type:"miracle",attr:"none",val:0,cost:3,img:"images/cards/card_50_bentobako_shake.png",effect:"旨味3消費。相手の手札をシャッフル（捨て札→引き直し）。相手の戦略を崩乱する！"},
+  {id:51,name:"旨味爆発",type:"miracle",attr:"none",val:0,cost:2,img:"images/cards/card_51_umami_bakuhatsu.png",effect:"旨味2消費。自分の旨味を+4回復！旨味を旨味で増やす錬金術的な奇跡。"},
+  {id:52,name:"保温ジャー",type:"miracle",attr:"none",val:0,cost:3,img:"images/cards/card_52_hoon_jar.png",effect:"旨味3消費。自分のHP+5回復＆毒状態解除！温かいジャーが身体を癒す。"},
+  {id:53,name:"食中毒ウイルス",type:"miracle",attr:"none",val:0,cost:4,img:"images/cards/card_53_shokuchudoku_virus.png",effect:"旨味4消費。相手に猛毒状態を付与（毎ターン6ダメージ）！強烈な毒がじわじわ削る。"},
+  {id:54,name:"冷凍ビーム",type:"miracle",attr:"none",val:0,cost:3,img:"images/cards/card_54_reito_beam.png",effect:"旨味3消費。相手の奇跡カードを1ターン封印！相手の必殺技を一時的に使えなくする。"},
+  {id:55,name:"炊飯神降臨",type:"miracle",attr:"none",val:0,cost:5,img:"images/cards/card_55_suihan_shin_kourin.png",effect:"旨味5消費。自分のHP+15大回復！炊飯の神が降臨して傷を癒してくれる。"},
+  {id:56,name:"腐敗の呪い",type:"miracle",attr:"none",val:0,cost:4,img:"images/cards/card_56_fuhai_no_noroi.png",effect:"旨味4消費。相手の追加攻撃カードを1ターン無効化！腐敗の呪いがトッピングを腐らせる。"},
+  {id:57,name:"香りの幻惑",type:"miracle",attr:"none",val:0,cost:2,img:"images/cards/card_57_kaori_no_genwaku.png",effect:"旨味2消費。相手の次の攻撃を50%の確率でミスにする！強烈な香りで相手の集中を乱す。"},
+  {id:58,name:"発酵パワー",type:"miracle",attr:"none",val:0,cost:3,img:"images/cards/card_58_hakko_power.png",effect:"旨味3消費。自分の次の攻撃ダメージを×2！発酵パワーが攻撃力を爆発的に高める。"},
+  {id:59,name:"真空パック",type:"miracle",attr:"none",val:0,cost:4,img:"images/cards/card_59_shinkuu_pack.png",effect:"旨味4消費。2ターン間ダメージを受けない無敵状態！真空パックで完全防御する。"},
+  {id:60,name:"弁当神の審判",type:"miracle",attr:"none",val:0,cost:6,img:"images/cards/card_60_bentogami_no_sabaki.png",effect:"旨味6消費。相手に20ダメージ（防御不可）！弁当神が下す最終審判。防御も反射も効かない。"},
+  {id:61,name:"女神の醤油",type:"item",attr:"none",val:0,img:"images/cards/card_61_megami_no_shoyu.png",effect:"HP+10回復！女神が注ぐ黄金の醤油が傷を癒す。"},
+  {id:62,name:"わさびの涙",type:"item",attr:"none",val:0,img:"images/cards/card_62_wasabi_no_namida.png",effect:"旨味+5回復！わさびの涙が旨味エネルギーを補充する。"},
+  {id:63,name:"仕切り強化",type:"item",attr:"none",val:0,img:"images/cards/card_63_shikiri_kyoka.png",effect:"次に使う防御カードの防御値+5！仕切りを強化してより堅固な守りを作る。"},
+  {id:64,name:"お茶でリセット",type:"item",attr:"none",val:0,img:"images/cards/card_64_ocha_de_reset.png",effect:"状態異常（毒・猛毒・凍結）を全て回復！緑茶の清らかな力が体を清める。"},
+  {id:65,name:"おかわりの権利",type:"item",attr:"none",val:0,img:"images/cards/card_65_okawari_no_kenri.png",effect:"手札を2枚追加ドロー！おかわりの権利を行使して手札を補充する。"},
+  {id:66,name:"割り箸の加護",type:"item",attr:"none",val:0,img:"images/cards/card_66_waribashi_no_kago.png",effect:"次に受けるダメージを1回だけ完全無効！割り箸を割った瞬間の加護が身を守る。"},
+  {id:67,name:"梅干し再生",type:"item",attr:"none",val:0,img:"images/cards/card_67_umeboshi_saisei.png",effect:"HP+5回復＆旨味+2回復！梅干しの酸っぱいパワーが体を活性化させる。"},
+  {id:68,name:"特上弁当箱",type:"item",attr:"none",val:0,img:"images/cards/card_68_tokujo_bentobako.png",effect:"1ターン限定で手札上限+2枚拡張！特上の弁当箱が余裕を生む。"},
+  {id:69,name:"福神漬けの奇跡",type:"item",attr:"none",val:0,img:"images/cards/card_69_fukujinzuke_no_kiseki.png",effect:"強力カードを1枚即座にドロー！福神漬けの七福神が強運をもたらす奇跡。"},
+  {id:70,name:"竹串の呪縛",type:"item",attr:"none",val:0,img:"images/cards/card_70_takegushi_no_jubaku.png",effect:"相手を1ターン行動不能にする！竹串の呪いが相手の全行動を封じる。"},
+  {id:71,name:"保冷剤爆弾",type:"item",attr:"none",val:0,img:"images/cards/card_71_horeizai_bakudan.png",effect:"相手に5ダメージ＆凍結1ターン付与！保冷剤が爆発して相手を凍らせる。"},
+  {id:72,name:"弁当箱の蓋",type:"item",attr:"none",val:0,img:"images/cards/card_72_bentobako_no_futa.png",effect:"次に受ける攻撃を完全ブロック（使い捨て）！弁当箱の蓋が盾になる。"},
+  {id:73,name:"蓋パリィ",type:"reflect",attr:"none",val:0,img:"images/cards/card_73_futa_parry.png",effect:"受けた攻撃を100%跳ね返す（単発）！完璧なタイミングで蓋が攻撃を弾く。"},
+  {id:74,name:"傾けガード",type:"reflect",attr:"none",val:0,img:"images/cards/card_74_katamuke_guard.png",effect:"50%の確率で攻撃を弾く！弁当を傾けて攻撃を流す技術的な防御。"},
+  {id:75,name:"仕切り反転",type:"reflect",attr:"none",val:0,img:"images/cards/card_75_shikiri_hanten.png",effect:"属性攻撃のみを完全反射する！仕切りが属性エネルギーを反転させる。"},
+  {id:76,name:"油はね返し",type:"reflect",attr:"none",val:0,img:"images/cards/card_76_abura_hanekashi.png",effect:"🔥揚げ物属性の攻撃のみ反射する！フライパンの油が炎属性を弾き返す。"},
+  {id:77,name:"出汁カウンター",type:"reflect",attr:"none",val:0,img:"images/cards/card_77_dashi_counter.png",effect:"🌊出汁属性の攻撃を反射＋HP+3回復！出汁の力を受け流してエネルギーに変える。"},
+  {id:78,name:"発酵ミラー",type:"reflect",attr:"none",val:0,img:"images/cards/card_78_hakko_mirror.png",effect:"⚡発酵属性の攻撃のみ反射する！発酵の鏡が電気エネルギーを跳ね返す。"},
+  {id:79,name:"全返しの重箱",type:"reflect",attr:"none",val:0,img:"images/cards/card_79_zenkaeshi_jubako.png",effect:"旨味3消費。全属性の攻撃を完全反射！重箱が全ての攻撃を跳ね返す最強の盾。"},
+  {id:80,name:"見切り仕切り",type:"reflect",attr:"none",val:0,img:"images/cards/card_80_mikiri_shikiri.png",effect:"攻撃を反射＆追加5ダメージ！見切った瞬間に反撃も加える高等技術。"},
+];
+
+const ATTR_LABEL={fire:"🔥揚げ物",dashi:"🌊出汁",herb:"🌿薬味",rice:"🍚米",ferment:"⚡発酵",sweet:"🌸甘味",none:"なし"};
+const TYPE_LABEL={attack:"⚔️ 攻撃",extra:"➕ 追加攻撃",defense:"🛡️ 防御",miracle:"✨ 奇跡",item:"🎒 アイテム",reflect:"🔁 反射"};
+const TYPE_COLOR={attack:"#FF8844",extra:"#FFAA22",defense:"#4488CC",miracle:"#9966CC",item:"#44AA66",reflect:"#CC4499"};
+
+// ===== ゲーム状態 =====
+let G = {
+  myName:"あなた", myFaction:"washoku", isCPU:false,
+  myHP:40, myMP:5, myLives:3,
+  enemyHP:40, enemyMP:5, enemyLives:3,
+  turn:1, phase:"attack", // attack or defense
+  isMyTurn:true,
+  hand:[], myField:[], enemyField:[],
+  pool:[...CARDS], eatenIds:[],
+  timer:20, timerInterval:null,
+  eatMode:false
+};
+let selectedFaction = "washoku";
+let bgmOn = false;
+
+// ===== BGM =====
+function toggleBGM(){
+  playBtn();
+  const audio = document.getElementById('bgm');
+  const btn = document.getElementById('bgmBtn');
+  if(!bgmOn){
+    if(audio.src && audio.src !== window.location.href){
+      audio.play().catch(()=>{});
+      bgmOn = true;
+      btn.textContent = '🎵 BGM ON';
+    } else {
+      alert('BGMファイル(bgm.mp3)をimagesフォルダと同じ階層に置いてください');
+    }
+  } else {
+    audio.pause();
+    bgmOn = false;
+    btn.textContent = '🔇 BGM OFF';
+  }
+}
+
+// BGMファイルを設定
+window.addEventListener('load', () => {
+  const audio = document.getElementById('bgm');
+  audio.src = 'bgm.mp3';
+  audio.volume = 0.5;
+});
+
+// ===== 効果音 =====
+function playSE(){
+  const se = document.getElementById('se');
+  se.currentTime = 0;
+  se.play().catch(()=>{});
+}
+
+function playBtn(){
+  const se = document.getElementById('se_btn');
+  se.currentTime = 0;
+  se.play().catch(()=>{});
+}
+
+// ===== 画面遷移 =====
+function showScreen(id){
+  playSE();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function selectFaction(el, id){
+  playBtn();
+  document.querySelectorAll('.faction-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedFaction = id;
+}
+
+// ===== マッチング =====
+let matchingInterval = null;
+// Firebase設定（要変更）
+const FB_URL = 'https://nwdb-7d939-default-rtdb.firebaseio.com';
+let myRoomId = null;
+let matchPollingInterval = null;
+
+function startOnlineMatch(){
+  playBtn();
+  const name = document.getElementById('playerName').value.trim();
+  if(!name){ alert('プレイヤー名を入力してください！'); return; }
+  G.myName = name;
+  G.myFaction = selectedFaction;
+  G.isCPU = false;
+  const btn = document.getElementById('matchOnlineBtn');
+
+  // キャンセル
+  if(btn.classList.contains('waiting')){
+    btn.classList.remove('waiting');
+    btn.textContent = '⚔️ オンラインマッチング';
+    cancelMatching();
+    return;
+  }
+
+  btn.classList.add('waiting');
+  btn.textContent = '⏳ マッチング待機中... (タップでキャンセル)';
+  enterMatchQueue();
+}
+
+async function enterMatchQueue(){
+  try {
+    // 待機中の部屋を探す
+    const res = await fetch(`${FB_URL}/matchQueue.json`);
+    const queue = await res.json();
+
+    if(queue){
+      // 待機中の部屋があればジョイン
+      const roomId = Object.keys(queue)[0];
+      const room = queue[roomId];
+      if(room.status === 'waiting' && room.player1 !== G.myName){
+        await fetch(`${FB_URL}/matchQueue/${roomId}.json`, {
+          method: 'PATCH',
+          body: JSON.stringify({ player2: G.myName, faction2: G.myFaction, status: 'matched' })
+        });
+        myRoomId = roomId;
+        startBattleOnline(roomId, 'player2', room.player1, room.faction1);
+        return;
+      }
+    }
+
+    // 待機中の部屋がなければ新規作成
+    const roomRes = await fetch(`${FB_URL}/matchQueue.json`, {
+      method: 'POST',
+      body: JSON.stringify({ player1: G.myName, faction1: G.myFaction, status: 'waiting', created: Date.now() })
+    });
+    const roomData = await roomRes.json();
+    myRoomId = roomData.name;
+
+    // 相手が来るまでポーリング
+    matchPollingInterval = setInterval(async ()=>{
+      const r = await fetch(`${FB_URL}/matchQueue/${myRoomId}.json`);
+      const data = await r.json();
+      if(data && data.status === 'matched'){
+        clearInterval(matchPollingInterval);
+        startBattleOnline(myRoomId, 'player1', data.player2, data.faction2);
+      }
+    }, 2000);
+
+  } catch(e){
+    console.error(e);
+    const btn = document.getElementById('matchOnlineBtn');
+    btn.classList.remove('waiting');
+    btn.textContent = '⚔️ オンラインマッチング';
+    alert('通信エラーが発生しました。再度お試しください。');
+  }
+}
+
+async function cancelMatching(){
+  clearInterval(matchPollingInterval);
+  if(myRoomId){
+    await fetch(`${FB_URL}/matchQueue/${myRoomId}.json`, { method: 'DELETE' }).catch(()=>{});
+    myRoomId = null;
+  }
+}
+
+function startBattleOnline(roomId, myRole, enemyName, enemyFaction){
+  const btn = document.getElementById('matchOnlineBtn');
+  btn.classList.remove('waiting');
+  btn.textContent = '⚔️ オンラインマッチング';
+  clearInterval(matchPollingInterval);
+  // マッチング成立後に部屋削除
+  fetch(`${FB_URL}/matchQueue/${roomId}.json`, { method: 'DELETE' }).catch(()=>{});
+  document.getElementById('enemyNameDisp').textContent = enemyName || '相手';
+  document.getElementById('enemyNameSide').textContent = '🥟 ' + (enemyName || '相手');
+  initBattle();
+  showScreen('battle');
+  startTimer();
+}
+
+function startCPUMatch(){
+  const name = document.getElementById('playerName').value.trim();
+  if(!name){ alert('プレイヤー名を入力してください！'); return; }
+  try {
+    playBtn();
+    G.myName = name;
+    G.myFaction = selectedFaction;
+    G.isCPU = true;
+    initBattle();
+    // showScreenを使わず直接切り替え（二重playSE防止）
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-battle').classList.add('active');
+    startTimer();
+  } catch(e) {
+    alert('エラー: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ===== バトル初期化 =====
+function initBattle(){
+  G.myHP=40; G.myMP=5; G.myLives=3;
+  G.enemyHP=40; G.enemyMP=5; G.enemyLives=3;
+  G.turn=1;
+  // フェーズ定義：
+  // 'my_atk'  = 自分攻撃・相手防御
+  // 'my_def'  = 自分防御・相手攻撃
+  G.phase='my_atk';
+  G.hand=[]; G.myField=[]; G.enemyField=[];
+  G.pool=[...CARDS]; G.eatenIds=[];
+  G.eatMode=false;
+  G.usedMiracle=false; G.usedItem=false;
+  G.cpuAtk=0; // CPU攻撃値（自分防御フェーズで参照）
+  document.getElementById('myNameDisp').textContent = G.myName;
+  document.getElementById('myNameSide').textContent = '🍱 '+G.myName;
+  document.getElementById('enemyNameDisp').textContent = G.isCPU ? 'CPU' : '中華同盟';
+  document.getElementById('enemyNameSide').textContent = G.isCPU ? '🤖 CPU' : '🥟 中華同盟';
+  drawCards(8);
+  updateBattleUI();
+  showPhaseBanner(G.phase);
+}
+
+// ===== フェーズバナー =====
+function showPhaseBanner(phase){
+  const banner = document.getElementById('phase-banner');
+  const box = document.getElementById('phaseBannerBox');
+  const main = document.getElementById('phaseBannerMain');
+  const sub = document.getElementById('phaseBannerSub');
+  box.className = 'phase-banner-box';
+  if(phase==='my_atk'){
+    box.classList.add('phase-atk');
+    main.textContent = '⚔️ 攻撃フェーズ';
+    sub.textContent = 'あなたの攻撃ターン！';
+  } else {
+    box.classList.add('phase-def');
+    main.textContent = '🛡️ 防御フェーズ';
+    sub.textContent = '相手の攻撃を防げ！';
+  }
+  banner.classList.add('active');
+  setTimeout(()=>banner.classList.remove('active'), 1800);
+}
+
+// ===== フェーズUI設定 =====
+function setPhase(phase){
+  G.phase = phase;
+  const badge = document.getElementById('phaseBadge');
+  const btnConfirm = document.getElementById('btnConfirm');
+  if(phase==='my_atk'){
+    badge.textContent = '⚔️ 攻撃ターン';
+    badge.className = 'b-phase-badge';
+    btnConfirm.textContent = '⚔️ 攻撃';
+    btnConfirm.disabled = false;
+    document.getElementById('myTag').classList.add('active');
+    document.getElementById('enemyTag').classList.remove('active');
+  } else {
+    badge.textContent = '🛡️ 防御ターン';
+    badge.className = 'b-phase-badge def-phase';
+    btnConfirm.textContent = '🛡️ 防御確定';
+    btnConfirm.disabled = false;
+    document.getElementById('myTag').classList.remove('active');
+    document.getElementById('enemyTag').classList.add('active');
+  }
+  G.hand.forEach(c=>{ if(c.selected && !isValidForPhase(c)) c.selected=false; });
+  G.usedMiracle=false; G.usedItem=false;
+  renderHand();
+  updateTotals();
+}
+
+function isValidForPhase(card){
+  if(G.phase==='my_atk') return card.type==='attack'||card.type==='extra'||card.type==='miracle'||card.type==='item'||card.type==='reflect';
+  if(G.phase==='my_def') return card.type==='defense'||card.type==='miracle'||card.type==='item'||card.type==='reflect';
+  return true;
+}
+
+// ===== カードドロー =====
+function drawCards(n){
+  for(let i=0;i<n;i++){
+    if(G.pool.length===0) G.pool=CARDS.filter(c=>!G.eatenIds.includes(c.id));
+    if(G.pool.length===0) break;
+    if(G.hand.length>=8) break;
+    const idx=Math.floor(Math.random()*G.pool.length);
+    G.hand.push({...G.pool[idx],selected:false});
+    G.pool.splice(idx,1);
+  }
+}
+
+// ===== 手札レンダリング =====
+function renderHand(){
+  const area=document.getElementById('handArea');
+  area.innerHTML='';
+  G.hand.forEach((card,i)=>{
+    const div=document.createElement('div');
+    const isEatTarget=G.eatMode&&(card.type==='attack'||card.type==='extra'||card.type==='defense');
+    const cls=[card.type, card.selected?'selected':'', isEatTarget?'eat-target':''].filter(Boolean);
+    div.className=`h-card ${cls.join(' ')}`;
+    if(!isValidForPhase(card)&&card.type!=='miracle'&&card.type!=='item'&&card.type!=='reflect'){
+      div.style.opacity='0.4';
+    }
+    const valText=card.type==='attack'?`攻${card.val}`:card.type==='extra'?`+${card.val}`:card.type==='defense'?`守${card.val}`:card.type==='miracle'?`MP${card.cost}`:card.effect?card.effect.slice(0,5):'';
+    const valColor=TYPE_COLOR[card.type]||'#333';
+    div.innerHTML=`<div class="h-card-img"><img src="${card.img}" alt="${card.name}" onerror="this.parentNode.textContent='🍱'"></div><div class="h-card-name">${card.name}</div><div class="h-card-val" style="color:${valColor}">${valText}</div>`;
+    div.addEventListener('click',()=>{ playBtn(); if(G.eatMode){ eatCard(i); } else { showCardDetail(card); toggleCard(i); } });
+    area.appendChild(div);
+  });
+}
+
+// ===== カード選択 =====
+function toggleCard(i){
+  const card=G.hand[i];
+  if(!isValidForPhase(card)&&card.type!=='miracle'&&card.type!=='item'&&card.type!=='reflect'){
+    setLog(`このフェーズでは使えません`); return;
+  }
+  // 奇跡・アイテムは1枚制限
+  if(card.type==='miracle'&&!card.selected&&G.usedMiracle){ setLog('奇跡は1ターンに1枚のみ！'); return; }
+  if(card.type==='item'&&!card.selected&&G.usedItem){ setLog('アイテムは1ターンに1枚のみ！'); return; }
+  card.selected=!card.selected;
+  if(card.type==='miracle') G.usedMiracle=card.selected;
+  if(card.type==='item') G.usedItem=card.selected;
+  renderHand();
+  updateTotals();
+}
+
+// ===== 食べるモード =====
+function toggleEatMode(){
+  playBtn();
+  G.eatMode=!G.eatMode;
+  const btn=document.getElementById('btnEat');
+  btn.classList.toggle('active-eat',G.eatMode);
+  btn.textContent=G.eatMode?'✋ キャンセル':'🍽 食べる';
+  renderHand();
+  if(G.eatMode) setLog('食べるカードを選んでください（攻撃・追加攻撃・防御のみ）');
+}
+
+function eatCard(i){
+  const card=G.hand[i];
+  if(card.type!=='attack'&&card.type!=='extra'&&card.type!=='defense'){ setLog('攻撃・追加攻撃・防御カードのみ食べられます'); return; }
+  G.eatenIds.push(card.id);
+  G.pool=G.pool.filter(c=>c.id!==card.id);
+  G.hand.splice(i,1);
+  G.eatMode=false;
+  const btn=document.getElementById('btnEat');
+  btn.classList.remove('active-eat');
+  btn.textContent='🍽 食べる';
+  setLog(`${card.name}を食べた！今後この試合では出てこなくなる`);
+  renderHand(); updateTotals();
+  endTurn();
+}
+
+// ===== カード詳細 =====
+function showCardDetail(card){
+  document.getElementById('cdImg').src=card.img;
+  document.getElementById('cdImg').onerror=function(){ this.parentNode.textContent='🍱'; };
+  document.getElementById('cdName').textContent=card.name;
+  const badge=document.getElementById('cdTypeBadge');
+  badge.textContent=TYPE_LABEL[card.type];
+  badge.style.background=TYPE_COLOR[card.type]+'33';
+  badge.style.color=TYPE_COLOR[card.type];
+  document.getElementById('cdType').textContent=TYPE_LABEL[card.type];
+  document.getElementById('cdAttr').textContent=ATTR_LABEL[card.attr];
+  let valStr='';
+  if(card.type==='attack') valStr=`攻撃力 ${card.val}`;
+  else if(card.type==='extra') valStr=`追加攻撃力 +${card.val}`;
+  else if(card.type==='defense') valStr=`防御力 ${card.val}`;
+  else if(card.type==='miracle') valStr=`旨味消費 ${card.cost}`;
+  else valStr='-';
+  document.getElementById('cdVal').textContent=valStr;
+  document.getElementById('cdEffect').textContent=card.effect||'-';
+  document.getElementById('cardDetail').classList.add('active');
+}
+
+function closeCardDetail(){
+  playSE();
+  document.getElementById('cardDetail').classList.remove('active');
+}
+
+// ===== 合計更新 =====
+function updateTotals(){
+  let atk=0,def=0;
+  G.hand.forEach(c=>{ if(!c.selected) return; if(c.type==='attack') atk+=c.val; if(c.type==='extra') atk+=c.val; if(c.type==='defense') def+=c.val; });
+  document.getElementById('totalAtk').textContent=`攻${atk}`;
+  document.getElementById('totalDef').textContent=`守${def}`;
+  renderMyField();
+}
+
+function renderMyField(){
+  const area=document.getElementById('myField');
+  area.innerHTML='';
+  G.hand.filter(c=>c.selected).forEach(card=>{
+    const div=document.createElement('div');
+    div.className=`f-card ${card.type}`;
+    const valText=card.type==='attack'?`攻${card.val}`:card.type==='extra'?`+${card.val}`:card.type==='defense'?`守${card.val}`:'';
+    const valColor=card.type==='defense'?'#2255AA':'#CC4400';
+    div.innerHTML=`<div class="f-card-img"><img src="${card.img}" alt="${card.name}" onerror="this.parentNode.textContent='🍱'"></div><div class="f-card-info"><div class="f-card-name">${card.name}</div><div class="f-card-sub">${ATTR_LABEL[card.attr]} · ${TYPE_LABEL[card.type]}</div></div><div class="f-card-val" style="color:${valColor}">${valText}</div>`;
+    area.appendChild(div);
+  });
+}
+
+// ===== バトルUI更新 =====
+function updateBattleUI(){
+  document.getElementById('myHP').textContent=G.myHP;
+  document.getElementById('myMP').textContent=G.myMP;
+  document.getElementById('enemyHP').textContent=G.enemyHP;
+  document.getElementById('enemyMP').textContent=G.enemyMP;
+  document.getElementById('turnNum').textContent=G.turn;
+  const li=n=>'❤️'.repeat(Math.max(0,n))+'💔'.repeat(Math.max(0,3-n));
+  document.getElementById('myLife').textContent=li(G.myLives);
+  document.getElementById('enemyLife').textContent=li(G.enemyLives);
+  setPhase(G.phase);
+  renderHand();
+  updateTotals();
+}
+
+// ===== ターン確定 =====
+function confirmAction(){
+  playBtn();
+  if(G.eatMode){ G.eatMode=false; document.getElementById('btnEat').textContent='🍽 食べる'; renderHand(); return; }
+  const selected=G.hand.filter(c=>c.selected);
+  if(selected.length===0){ setLog('カードを選んでください'); return; }
+  const atk=selected.filter(c=>c.type==='attack'||c.type==='extra').reduce((s,c)=>s+c.val,0);
+  const def=selected.filter(c=>c.type==='defense').reduce((s,c)=>s+c.val,0);
+
+  if(G.phase==='my_atk'){
+    // 自分の攻撃値を保存→ターン終了で判定
+    G.myAtkVal=atk;
+    setLog(`攻撃カード確定！攻${atk}で相手を攻撃する`);
+  } else {
+    // 防御フェーズ：CPU攻撃と差し引き
+    G.myDefVal=def;
+    setLog(`防御カード確定！守${def}で相手の攻撃を受ける`);
+  }
+  const drawn=selected.length;
+  G.hand=G.hand.filter(c=>!c.selected);
+  drawCards(drawn);
+
+  // カード演出を表示してからターン終了
+  showCardReveal(selected, ()=>resolvePhase());
+}
+
+// ===== カード演出 =====
+function showCardReveal(cards, callback){
+  const area=document.getElementById('card-reveal');
+  area.innerHTML='';
+  area.classList.add('active');
+  const offsets=[{x:0,y:0},{x:-20,y:-15},{x:20,y:-10},{x:-10,y:15},{x:15,y:10}];
+  cards.forEach((card,i)=>{
+    const div=document.createElement('div');
+    div.className='reveal-card';
+    const off=offsets[i%offsets.length];
+    div.style.transform=`translate(${off.x}px,${off.y}px)`;
+    div.style.animationDelay=`${i*0.5}s`;
+    div.style.animationDuration=`${1.5+cards.length*0.3}s`;
+    div.innerHTML=`<img src="${card.img}" alt="${card.name}" onerror="this.textContent='🍱'">`;
+    area.appendChild(div);
+  });
+  const totalTime=(cards.length*0.5+1.8)*1000;
+  setTimeout(()=>{ area.classList.remove('active'); area.innerHTML=''; if(callback) callback(); }, totalTime);
+}
+
+// ===== フェーズ解決 =====
+function resolvePhase(){
+  if(G.phase==='my_atk'){
+    // 自分攻撃フェーズ終了 → CPU防御（CPU防御力はランダム0〜8）
+    const cpuDef=G.isCPU?Math.floor(Math.random()*9):0;
+    const dmg=Math.max(0,(G.myAtkVal||0)-cpuDef);
+    if(dmg>0){
+      G.enemyHP-=dmg;
+      showDmgEffect(dmg,false);
+      setLog(`攻${G.myAtkVal||0} vs 相手守${cpuDef} → ${dmg}ダメージ！`);
+      checkHP('enemy');
+    } else {
+      setLog(`攻${G.myAtkVal||0} vs 相手守${cpuDef} → 防がれた！`);
+    }
+    // 相手フィールドにCPU防御表示
+    if(cpuDef>0){
+      const cpuDefCards=CARDS.filter(c=>c.type==='defense');
+      const pick=cpuDefCards[Math.floor(Math.random()*cpuDefCards.length)];
+      document.getElementById('enemyField').innerHTML=`<div class="f-card defense"><div class="f-card-img"><img src="${pick.img}" alt="" onerror="this.parentNode.textContent='🛡️'"></div><div class="f-card-info"><div class="f-card-name">${pick.name}</div></div><div class="f-card-val" style="color:#2255AA">守${cpuDef}</div></div>`;
+    }
+    G.myAtkVal=0;
+    nextPhase();
+  } else {
+    // 自分防御フェーズ終了 → CPU攻撃との差し引き
+    const dmg=Math.max(0,(G.cpuAtk||0)-(G.myDefVal||0));
+    if(dmg>0){
+      G.myHP-=dmg;
+      showDmgEffect(dmg,false);
+      setLog(`相手攻${G.cpuAtk||0} vs 守${G.myDefVal||0} → ${dmg}ダメージ受けた！`);
+      checkHP('my');
+    } else {
+      setLog(`相手攻${G.cpuAtk||0} vs 守${G.myDefVal||0} → 完全防御！`);
+    }
+    G.myDefVal=0; G.cpuAtk=0;
+    document.getElementById('enemyField').innerHTML='';
+    nextPhase();
+  }
+  updateBattleUI();
+}
+
+// ===== 次フェーズへ =====
+function nextPhase(){
+  clearInterval(G.timerInterval);
+  if(G.phase==='my_atk'){
+    // 次は自分防御フェーズ（= CPU攻撃フェーズ）
+    G.phase='my_def';
+    G.turn++;
+    // CPUが攻撃値を決定
+    if(G.isCPU){
+      const atkPool=CARDS.filter(c=>c.type==='attack');
+      const pick=atkPool[Math.floor(Math.random()*atkPool.length)];
+      G.cpuAtk=pick.val;
+      // CPU攻撃を相手フィールドに表示
+      document.getElementById('enemyField').innerHTML=`<div class="f-card attack"><div class="f-card-img"><img src="${pick.img}" alt="" onerror="this.parentNode.textContent='⚔️'"></div><div class="f-card-info"><div class="f-card-name">${pick.name}</div></div><div class="f-card-val">攻${G.cpuAtk}</div></div>`;
+      setLog(`相手が${pick.name}(攻${G.cpuAtk})を使用！防御してください`);
+    }
+  } else {
+    // 次は自分攻撃フェーズ
+    G.phase='my_atk';
+    G.turn++;
+    document.getElementById('enemyField').innerHTML='';
+  }
+  setTimeout(()=>{
+    showPhaseBanner(G.phase);
+    updateBattleUI();
+    startTimer();
+  }, 500);
+}
+
+// ===== ターン終了（タイムアウト・手動） =====
+function endTurn(){
+  playBtn();
+  clearInterval(G.timerInterval);
+  G.hand.forEach(c=>c.selected=false);
+  // カードなしでそのまま解決
+  G.myAtkVal = G.myAtkVal||0;
+  G.myDefVal = G.myDefVal||0;
+  showCardReveal([], ()=>resolvePhase());
+}
+
+// ===== HP確認 =====
+function checkHP(target){
+  if(target==='enemy'){
+    if(G.enemyHP<=0&&G.enemyLives===3){ G.enemyHP=20; G.enemyLives=2; showResult('morning','相手のHPを削りきった！朝ごはん完食！HP20で復活...'); }
+    else if(G.enemyHP<=0&&G.enemyLives===2){ G.enemyHP=10; G.enemyLives=1; showResult('lunch','さらに追い詰めた！昼食完食！HP10で最後の勝負...'); }
+    else if(G.enemyHP<=0&&G.enemyLives<=1){ G.enemyHP=0; G.enemyLives=0; clearInterval(G.timerInterval); showResult('finish','ごちそうさまでした！あなたの勝利！'); }
+  } else {
+    if(G.myHP<=0&&G.myLives===3){ G.myHP=20; G.myLives=2; showResult('morning','HPを削られた...朝ごはん完食！HP20で復活'); }
+    else if(G.myHP<=0&&G.myLives===2){ G.myHP=10; G.myLives=1; showResult('lunch','さらにやられた...昼食完食！HP10で最後の勝負'); }
+    else if(G.myHP<=0&&G.myLives<=1){ G.myHP=0; G.myLives=0; clearInterval(G.timerInterval); showResult('finish','ごちそうさまでした！相手の勝利...'); }
+  }
+}
+
+// ===== タイマー =====
+function startTimer(){
+  G.timer=20;
+  const el=document.getElementById('timer');
+  clearInterval(G.timerInterval);
+  el.textContent=G.timer;
+  el.className='b-timer';
+  G.timerInterval=setInterval(()=>{
+    G.timer--;
+    el.textContent=G.timer;
+    el.className=G.timer<=5?'b-timer urgent':'b-timer';
+    if(G.timer<=0){ clearInterval(G.timerInterval); endTurn(); }
+  },1000);
+}
+
+// ===== ダメージエフェクト =====
+function showDmgEffect(amount, isHeal=false){
+  const el=document.createElement('div');
+  el.className='dmg-effect'+(isHeal?' heal':'');
+  el.textContent=(isHeal?'+':'-')+Math.abs(amount);
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1300);
+}
+function setLog(msg){ document.getElementById('battleLog').textContent=msg; }
+
+// ===== 演出 =====
+function showResult(type, msg){
+  const srcs={morning:'images/ui/result_morning.png',lunch:'images/ui/result_lunch.png',finish:'images/ui/result_gochisou.png'};
+  const ov=document.getElementById('overlay-result');
+  const img=document.getElementById('resultImg');
+  ov.classList.remove('active');
+  img.classList.remove('animate');
+  img.src='';
+  void img.offsetWidth;
+  setTimeout(()=>{
+    img.src=srcs[type];
+    document.getElementById('resultSub').textContent=msg;
+    ov.classList.add('active');
+    void img.offsetWidth;
+    img.classList.add('animate');
+  },50);
+}
+
+function closeResult(){
+  playSE();
+  document.getElementById('overlay-result').classList.remove('active');
+  if(G.myLives<=0||G.enemyLives<=0){
+    clearInterval(G.timerInterval);
+    setTimeout(()=>{ showScreen('match'); },300);
+  } else {
+    updateBattleUI();
+  }
+}
+</script>
+</body>
+
+// ===== フェーズ管理 =====
+function setPhase(phase){
+  G.phase = phase;
+  const badge = document.getElementById('phaseBadge');
+  const btnConfirm = document.getElementById('btnConfirm');
+  if(phase === 'attack'){
+    badge.textContent = '攻撃フェーズ';
+    badge.className = 'b-phase-badge';
+    btnConfirm.textContent = '⚔️ 攻撃';
+    btnConfirm.disabled = false;
+  } else {
+    badge.textContent = '防御フェーズ';
+    badge.className = 'b-phase-badge def-phase';
+    btnConfirm.textContent = '🛡️ 防御確定';
+    btnConfirm.disabled = false;
+  }
+  // 攻撃フェーズでは防御カードをグレー、防御フェーズでは攻撃・追加攻撃をグレー
+  G.hand.forEach(c => { if(c.selected && !isValidForPhase(c)) c.selected = false; });
+  renderHand();
+  updateTotals();
+}
+
+function isValidForPhase(card){
+  if(G.phase === 'attack') return card.type === 'attack' || card.type === 'extra' || card.type === 'miracle' || card.type === 'item' || card.type === 'reflect';
+  if(G.phase === 'defense') return card.type === 'defense' || card.type === 'miracle' || card.type === 'item' || card.type === 'reflect';
+  return true;
+}
+
+// ===== カードドロー =====
+function drawCards(n){
+  for(let i=0;i<n;i++){
+    if(G.pool.length === 0) G.pool = CARDS.filter(c => !G.eatenIds.includes(c.id));
+    if(G.pool.length === 0) break;
+    if(G.hand.length >= 8) break;
+    const idx = Math.floor(Math.random()*G.pool.length);
+    G.hand.push({...G.pool[idx], selected:false});
+    G.pool.splice(idx,1);
+  }
+}
+
+// ===== 手札レンダリング =====
+function renderHand(){
+  const area = document.getElementById('handArea');
+  area.innerHTML = '';
+  G.hand.forEach((card,i)=>{
+    const div = document.createElement('div');
+    const cls = [card.type, card.selected?'selected':'', G.eatMode&&(card.type==='attack'||card.type==='extra'||card.type==='defense')?'eat-target':''].filter(Boolean);
+    div.className = `h-card ${cls.join(' ')}`;
+    // フェーズで使えないカードは少し暗く
+    if(!isValidForPhase(card) && card.type !== 'miracle' && card.type !== 'item' && card.type !== 'reflect'){
+      div.style.opacity = '0.5';
+    }
+    const valText = card.type==='attack'?`攻${card.val}`:card.type==='extra'?`+${card.val}`:card.type==='defense'?`守${card.val}`:card.type==='miracle'?`MP${card.cost}`:card.effect?card.effect.slice(0,5):'';
+    const valColor = TYPE_COLOR[card.type]||'#333';
+    div.innerHTML = `<div class="h-card-img"><img src="${card.img}" alt="${card.name}" onerror="this.parentNode.textContent='🍱'"></div><div class="h-card-name">${card.name}</div><div class="h-card-val" style="color:${valColor}">${valText}</div>`;
+    div.addEventListener('click', ()=>{ playBtn(); if(G.eatMode){ eatCard(i); } else { showCardDetail(card); toggleCard(i); } });
+    area.appendChild(div);
+  });
+}
+
+// ===== カード選択 =====
+function toggleCard(i){
+  const card = G.hand[i];
+  if(!isValidForPhase(card) && card.type!=='miracle'&&card.type!=='item'&&card.type!=='reflect'){
+    setLog(`${G.phase==='attack'?'攻撃':'防御'}フェーズでは使えません`); return;
+  }
+  card.selected = !card.selected;
+  renderHand();
+  updateTotals();
+}
+
+// ===== 食べるモード =====
+function toggleEatMode(){
+  playBtn();
+  G.eatMode = !G.eatMode;
+  const btn = document.getElementById('btnEat');
+  btn.classList.toggle('active-eat', G.eatMode);
+  btn.textContent = G.eatMode ? '✋ キャンセル' : '🍽 食べる';
+  renderHand();
+  if(G.eatMode) setLog('食べるカードを選んでください（攻撃・追加攻撃・防御のみ）');
+}
+
+function eatCard(i){
+  const card = G.hand[i];
+  if(card.type!=='attack'&&card.type!=='extra'&&card.type!=='defense'){
+    setLog('攻撃・追加攻撃・防御カードのみ食べられます'); return;
+  }
+  G.eatenIds.push(card.id);
+  G.pool = G.pool.filter(c=>c.id!==card.id);
+  G.hand.splice(i,1);
+  G.eatMode = false;
+  const btn = document.getElementById('btnEat');
+  btn.classList.remove('active-eat');
+  btn.textContent = '🍽 食べる';
+  setLog(`${card.name}を食べた！今後この試合では出てこなくなる`);
+  renderHand();
+  updateTotals();
+  // 食べるはターン終了扱い
+  endTurn();
+}
+
+// ===== カード詳細 =====
+function showCardDetail(card){
+  document.getElementById('cdImg').src = card.img;
+  document.getElementById('cdImg').onerror = function(){ this.parentNode.textContent='🍱'; };
+  document.getElementById('cdName').textContent = card.name;
+  const badge = document.getElementById('cdTypeBadge');
+  badge.textContent = TYPE_LABEL[card.type];
+  badge.style.background = TYPE_COLOR[card.type]+'33';
+  badge.style.color = TYPE_COLOR[card.type];
+  document.getElementById('cdType').textContent = TYPE_LABEL[card.type];
+  document.getElementById('cdAttr').textContent = ATTR_LABEL[card.attr];
+  let valStr = '';
+  if(card.type==='attack') valStr = `攻撃力 ${card.val}`;
+  else if(card.type==='extra') valStr = `追加攻撃力 +${card.val}`;
+  else if(card.type==='defense') valStr = `防御力 ${card.val}`;
+  else if(card.type==='miracle') valStr = `旨味消費 ${card.cost}`;
+  else valStr = '-';
+  document.getElementById('cdVal').textContent = valStr;
+  document.getElementById('cdEffect').textContent = card.effect || '-';
+  document.getElementById('cardDetail').classList.add('active');
+}
+
+function closeCardDetail(){
+  playSE();
+  document.getElementById('cardDetail').classList.remove('active');
+}
+
+// ===== 合計更新 =====
+function updateTotals(){
+  let atk=0,def=0;
+  G.hand.forEach(c=>{
+    if(!c.selected) return;
+    if(c.type==='attack') atk+=c.val;
+    if(c.type==='extra') atk+=c.val;
+    if(c.type==='defense') def+=c.val;
+  });
+  document.getElementById('totalAtk').textContent = `攻${atk}`;
+  document.getElementById('totalDef').textContent = `守${def}`;
+  renderMyField();
+}
+
+function renderMyField(){
+  const area = document.getElementById('myField');
+  area.innerHTML = '';
+  G.hand.filter(c=>c.selected).forEach(card=>{
+    const div = document.createElement('div');
+    div.className = `f-card ${card.type}`;
+    const valText = card.type==='attack'?`攻${card.val}`:card.type==='extra'?`+${card.val}`:card.type==='defense'?`守${card.val}`:'';
+    const valColor = card.type==='defense'?'#2255AA':'#CC4400';
+    div.innerHTML = `<div class="f-card-img"><img src="${card.img}" alt="${card.name}" onerror="this.parentNode.textContent='🍱'"></div><div class="f-card-info"><div class="f-card-name">${card.name}</div><div class="f-card-sub">${ATTR_LABEL[card.attr]} · ${TYPE_LABEL[card.type]}</div></div><div class="f-card-val" style="color:${valColor}">${valText}</div>`;
+    area.appendChild(div);
+  });
+}
+
+// ===== バトルUI更新 =====
+function updateBattleUI(){
+  document.getElementById('myHP').textContent = G.myHP;
+  document.getElementById('myMP').textContent = G.myMP;
+  document.getElementById('enemyHP').textContent = G.enemyHP;
+  document.getElementById('enemyMP').textContent = G.enemyMP;
+  document.getElementById('turnNum').textContent = G.turn;
+  const li = n => '❤️'.repeat(Math.max(0,n))+'💔'.repeat(Math.max(0,3-n));
+  document.getElementById('myLife').textContent = li(G.myLives);
+  document.getElementById('enemyLife').textContent = li(G.enemyLives);
+  setPhase(G.phase);
+  renderHand();
+  updateTotals();
+}
+
+// ===== 攻撃確定 =====
+function confirmAction(){
+  playBtn();
+  if(G.eatMode){ G.eatMode=false; document.getElementById('btnEat').textContent='🍽 食べる'; renderHand(); return; }
+  const selected = G.hand.filter(c=>c.selected);
+  if(selected.length===0){ setLog('カードを選んでください'); return; }
+  const atk = selected.filter(c=>c.type==='attack'||c.type==='extra').reduce((s,c)=>s+c.val,0);
+  const def = selected.filter(c=>c.type==='defense').reduce((s,c)=>s+c.val,0);
+  const drawn = selected.length;
+  G.hand = G.hand.filter(c=>!c.selected);
+  drawCards(drawn);
+  if(G.phase==='attack' && atk>0){
+    G.enemyHP -= atk;
+    showDmgEffect(atk);
+    setLog(`攻撃！相手に${atk}ダメージ！`);
+    checkHP('enemy');
+  } else if(G.phase==='defense' && def>0){
+    setLog(`防御！${def}の守備力を展開！`);
+  }
+  updateBattleUI();
+  // CPU戦なら相手ターンへ
+  if(G.isCPU) setTimeout(()=>cpuTurn(), 1200);
+}
+
+// ===== ターン終了 =====
+function endTurn(){
+  playBtn();
+  clearInterval(G.timerInterval);
+  G.hand.forEach(c=>c.selected=false);
+  G.turn++;
+  // フェーズ交代
+  G.phase = G.phase==='attack' ? 'defense' : 'attack';
+  setLog('ターン終了。');
+  updateBattleUI();
+  startTimer();
+  if(G.isCPU) setTimeout(()=>cpuTurn(), 800);
+}
+
+// ===== CPU思考 =====
+function cpuTurn(){
+  if(G.enemyHP <= 0) return;
+  // CPUは単純にランダムで攻撃
+  const atkPool = CARDS.filter(c=>c.type==='attack');
+  const pick = atkPool[Math.floor(Math.random()*atkPool.length)];
+  const dmg = pick.val;
+  if(G.phase==='attack'){
+    // CPUの攻撃（プレイヤーの防御フェーズ）
+    document.getElementById('enemyField').innerHTML = `<div class="f-card attack"><div class="f-card-img"><img src="${pick.img}" alt="" onerror="this.parentNode.textContent='⚔️'"></div><div class="f-card-info"><div class="f-card-name">${pick.name}</div></div><div class="f-card-val">攻${dmg}</div></div>`;
+    setLog(`相手が${pick.name}(攻${dmg})を使用！防御してください`);
+  } else {
+    G.myHP -= dmg;
+    showDmgEffect(dmg);
+    document.getElementById('enemyField').innerHTML = '';
+    setLog(`CPU攻撃！${dmg}ダメージを受けた`);
+    checkHP('my');
+    updateBattleUI();
+  }
+}
+
+// ===== HP確認 =====
+function checkHP(target){
+  if(target==='enemy'){
+    if(G.enemyHP <= 0 && G.enemyLives === 3){
+      G.enemyHP = 20; G.enemyLives = 2;
+      showResult('morning','相手のHPを削りきった！朝ごはん完食！HP20で復活...');
+    } else if(G.enemyHP <= 0 && G.enemyLives === 2){
+      G.enemyHP = 10; G.enemyLives = 1;
+      showResult('lunch','さらに追い詰めた！昼食完食！HP10で最後の勝負...');
+    } else if(G.enemyHP <= 0 && G.enemyLives <= 1){
+      G.enemyHP = 0; G.enemyLives = 0;
+      clearInterval(G.timerInterval);
+      showResult('finish','ごちそうさまでした！あなたの勝利！');
+    }
+  } else {
+    if(G.myHP <= 0 && G.myLives === 3){
+      G.myHP = 20; G.myLives = 2;
+      showResult('morning','HPを削られた...朝ごはん完食！HP20で復活');
+    } else if(G.myHP <= 0 && G.myLives === 2){
+      G.myHP = 10; G.myLives = 1;
+      showResult('lunch','さらにやられた...昼食完食！HP10で最後の勝負');
+    } else if(G.myHP <= 0 && G.myLives <= 1){
+      G.myHP = 0; G.myLives = 0;
+      clearInterval(G.timerInterval);
+      showResult('finish','ごちそうさまでした！相手の勝利...');
+    }
+  }
+}
+
+// ===== タイマー =====
+function startTimer(){
+  G.timer = 20;
+  const el = document.getElementById('timer');
+  clearInterval(G.timerInterval);
+  el.textContent = G.timer;
+  el.className = 'b-timer';
+  G.timerInterval = setInterval(()=>{
+    G.timer--;
+    el.textContent = G.timer;
+    el.className = G.timer <= 5 ? 'b-timer urgent' : 'b-timer';
+    if(G.timer <= 0){ clearInterval(G.timerInterval); endTurn(); }
+  }, 1000);
+}
+
+// ===== ダメージエフェクト =====
+function showDmgEffect(amount, isHeal=false){
+  const el = document.createElement('div');
+  el.className = 'dmg-effect' + (isHeal?' heal':'');
+  el.textContent = (isHeal?'+':'-') + Math.abs(amount);
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1300);
+}
+function setLog(msg){ document.getElementById('battleLog').textContent = msg; }
+
+// ===== 演出 =====
+function showResult(type, msg){
+  const srcs = {morning:'images/ui/result_morning.png',lunch:'images/ui/result_lunch.png',finish:'images/ui/result_gochisou.png'};
+  const ov = document.getElementById('overlay-result');
+  const img = document.getElementById('resultImg');
+  // 既存アニメーションをリセットしてから表示
+  ov.classList.remove('active');
+  img.classList.remove('animate');
+  img.src = '';
+  void img.offsetWidth; // reflow
+  setTimeout(()=>{
+    img.src = srcs[type];
+    document.getElementById('resultSub').textContent = msg;
+    ov.classList.add('active');
+    void img.offsetWidth;
+    img.classList.add('animate');
+  }, 50);
+}
+
+function closeResult(){
+  playSE();
+  const ov = document.getElementById('overlay-result');
+  ov.classList.remove('active');
+  // ライフが0になっていたら試合終了→マッチング画面へ
+  if(G.myLives <= 0 || G.enemyLives <= 0){
+    clearInterval(G.timerInterval);
+    setTimeout(()=>{ showScreen('match'); }, 300);
+  } else {
+    updateBattleUI();
+  }
+}
+</script>
+</body>
+</html>

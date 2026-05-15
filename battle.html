@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>弁当箱大戦</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background: #D4EED4;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .header {
+    background: #4A9B4A;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .header-turn { background: #2D7A2D; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 800; }
+  .header-title { font-size: 13px; font-weight: 800; flex: 1; text-align: center; }
+  .header-btn { background: #2D7A2D; border: none; color: white; font-family: inherit; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; cursor: pointer; }
+  .turn-area { background: #B8DDB8; display: flex; align-items: center; padding: 3px 8px; gap: 6px; flex-shrink: 0; }
+  .player-tag { background: white; border-radius: 12px; padding: 3px 10px; font-size: 11px; font-weight: 700; color: #333; display: flex; align-items: center; gap: 4px; }
+  .player-tag .dot { width: 8px; height: 8px; border-radius: 50%; background: #999; }
+  .player-tag.active .dot { background: #FF6600; }
+  .turn-arrow { color: #FF6600; font-size: 18px; }
+  .main-field { flex: 1; display: flex; overflow: hidden; }
+  .field-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .enemy-cards { flex: 1; background: #C8E8C8; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; border-bottom: 2px solid #8BC88B; }
+  .total-area { background: #B0D8B0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 4px 8px; flex-shrink: 0; border-top: 1px solid #8BC88B; border-bottom: 1px solid #8BC88B; }
+  .total-box { background: #F0F8F0; border: 2px solid #6AB06A; border-radius: 6px; padding: 3px 14px; font-size: 14px; font-weight: 900; color: #2D5A2D; text-align: center; min-width: 80px; }
+  .total-box .total-label { font-size: 9px; font-weight: 600; color: #5A8A5A; display: block; margin-bottom: 1px; }
+  .my-cards { flex: 1; background: #D8EED8; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .status-sidebar { width: 110px; background: #A8D8A8; display: flex; flex-direction: column; flex-shrink: 0; border-left: 2px solid #8BC88B; }
+  .player-status { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 3px; border-bottom: 2px solid #8BC88B; }
+  .player-status:last-child { border-bottom: none; }
+  .status-name { font-size: 11px; font-weight: 800; color: #1A3A1A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status-row { display: flex; align-items: center; gap: 4px; }
+  .status-label { color: #5A8A5A; font-size: 9px; min-width: 18px; }
+  .hp-value { font-size: 13px; font-weight: 900; color: #CC2222; }
+  .mp-value { font-size: 13px; font-weight: 900; color: #6644AA; }
+  .miracle-slot { background: #E8F8E8; border: 2px solid #6AB06A; border-radius: 6px; padding: 4px; margin-top: 3px; display: none; }
+  .miracle-slot.active { display: block; }
+  .miracle-card-mini { display: flex; align-items: center; gap: 4px; }
+  .miracle-img { width: 28px; height: 28px; border-radius: 4px; background: #C8E8C8; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .miracle-name { font-size: 9px; font-weight: 700; color: #333; }
+  .miracle-cost { font-size: 9px; color: #6644AA; font-weight: 700; }
+  .field-card { background: white; border: 2px solid #AAD4AA; border-radius: 8px; display: flex; align-items: center; gap: 6px; padding: 5px 8px; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+  .field-card.type-attack { border-color: #FF8844; background: #FFF8F5; }
+  .field-card.type-extra { border-color: #FFAA22; background: #FFFBF0; }
+  .field-card.type-defense { border-color: #4488CC; background: #F5F8FF; }
+  .field-card.type-miracle { border-color: #9966CC; background: #F8F5FF; }
+  .field-card.type-item { border-color: #44AA66; background: #F5FFF8; }
+  .field-card.type-reflect { border-color: #CC4499; background: #FFF5FA; }
+  .field-card-img { width: 40px; height: 40px; border-radius: 6px; background: #E8F0E8; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; overflow: hidden; }
+  .field-card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .field-card-info { flex: 1; overflow: hidden; }
+  .field-card-name { font-size: 12px; font-weight: 800; color: #1A3A1A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .field-card-sub { font-size: 10px; color: #6A8A6A; margin-top: 1px; }
+  .field-card-value { font-size: 15px; font-weight: 900; color: #CC4400; flex-shrink: 0; }
+  .field-card-price { background: #FFEE99; border: 1px solid #CCAA00; border-radius: 10px; font-size: 10px; font-weight: 700; color: #886600; padding: 1px 6px; flex-shrink: 0; }
+  .hand-area { background: #9AC89A; border-top: 2px solid #6AAA6A; padding: 5px 6px; flex-shrink: 0; }
+  .hand-scroll { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .hand-scroll::-webkit-scrollbar { display: none; }
+  .hand-card { background: white; border: 2px solid #AAD4AA; border-radius: 8px; min-width: 58px; max-width: 58px; padding: 4px 3px; text-align: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+  .hand-card.selected { border-color: #FF6600; transform: translateY(-5px); box-shadow: 0 5px 12px rgba(255,102,0,0.3); }
+  .hand-card.type-attack { border-top: 3px solid #FF8844; }
+  .hand-card.type-extra { border-top: 3px solid #FFAA22; }
+  .hand-card.type-defense { border-top: 3px solid #4488CC; }
+  .hand-card.type-miracle { border-top: 3px solid #9966CC; }
+  .hand-card.type-item { border-top: 3px solid #44AA66; }
+  .hand-card.type-reflect { border-top: 3px solid #CC4499; }
+  .hand-card-img { width: 44px; height: 44px; border-radius: 5px; background: #E8F0E8; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 2px; overflow: hidden; }
+  .hand-card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .hand-card-val { font-size: 10px; font-weight: 900; color: #333; }
+  .bottom-bar { background: #4A9B4A; display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; gap: 6px; flex-shrink: 0; }
+  .bottom-log { flex: 1; background: #2D7A2D; border-radius: 6px; padding: 4px 8px; font-size: 10px; color: #CCFFCC; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .bottom-btn { background: #F0F8F0; border: 2px solid #6AB06A; border-radius: 8px; font-family: inherit; font-size: 10px; font-weight: 800; color: #1A5A1A; padding: 5px 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .bottom-btn.end-turn { background: #2D7A2D; color: white; border-color: #1A5A1A; }
+  .bottom-btn.confirm { background: #FF6600; color: white; border-color: #CC4400; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-turn">TURN 5</div>
+  <div class="header-title">🍱 弁当箱大戦</div>
+  <button class="header-btn">奇跡一覧</button>
+  <button class="header-btn">カード図鑑</button>
+</div>
+
+<div class="turn-area">
+  <div class="player-tag"><span class="dot"></span>中華同盟</div>
+  <div class="turn-arrow">→</div>
+  <div class="player-tag active"><span class="dot"></span>和食連合</div>
+</div>
+
+<div class="main-field">
+  <div class="field-area">
+    <div class="enemy-cards">
+      <div class="field-card type-defense">
+        <div class="field-card-img">🌿</div>
+        <div class="field-card-info">
+          <div class="field-card-name">昆布出汁膜</div>
+          <div class="field-card-sub">🌊出汁 · 防御</div>
+        </div>
+        <div class="field-card-value" style="color:#2255AA">守8</div>
+        <div class="field-card-price">¥6</div>
+      </div>
+      <div class="field-card type-defense">
+        <div class="field-card-img">🥬</div>
+        <div class="field-card-info">
+          <div class="field-card-name">大葉カーテン</div>
+          <div class="field-card-sub">🌿薬味 · 防御</div>
+        </div>
+        <div class="field-card-value" style="color:#2255AA">守10</div>
+        <div class="field-card-price">¥8</div>
+      </div>
+    </div>
+    <div class="total-area">
+      <div class="total-box"><span class="total-label">総攻撃力</span>攻15</div>
+      <div class="total-box" style="color:#2255AA;border-color:#4488CC;"><span class="total-label" style="color:#4488AA">総守備力</span>守18</div>
+    </div>
+    <div class="my-cards">
+      <div class="field-card type-attack" style="border-color:#FF6600;box-shadow:0 2px 8px rgba(255,102,0,0.3)">
+        <div class="field-card-img">🍗</div>
+        <div class="field-card-info">
+          <div class="field-card-name">唐揚げ砲</div>
+          <div class="field-card-sub">🔥揚げ物 · 攻撃</div>
+        </div>
+        <div class="field-card-value">攻9</div>
+        <div class="field-card-price">¥5</div>
+      </div>
+      <div class="field-card type-extra" style="border-color:#FFAA22;box-shadow:0 2px 8px rgba(255,170,0,0.3)">
+        <div class="field-card-img">🫙</div>
+        <div class="field-card-info">
+          <div class="field-card-name">追い醤油</div>
+          <div class="field-card-sub">追加攻撃</div>
+        </div>
+        <div class="field-card-value" style="color:#CC8800">+6</div>
+        <div class="field-card-price">¥4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-sidebar">
+    <div class="player-status">
+      <div class="status-name">🥟 中華同盟</div>
+      <div class="status-row"><span class="status-label">HP</span><span class="hp-value">20</span></div>
+      <div class="status-row"><span class="status-label">旨味</span><span class="mp-value">3</span></div>
+      <div class="status-row"><span class="status-label">命</span><span style="font-size:11px">❤️💔💔</span></div>
+      <div class="miracle-slot active">
+        <div class="miracle-card-mini">
+          <div class="miracle-img">🌟</div>
+          <div><div class="miracle-name">発酵パワー</div><div class="miracle-cost">旨味3</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="player-status">
+      <div class="status-name">🍱 和食連合</div>
+      <div class="status-row"><span class="status-label">HP</span><span class="hp-value" style="color:#2266CC">40</span></div>
+      <div class="status-row"><span class="status-label">旨味</span><span class="mp-value">2</span></div>
+      <div class="status-row"><span class="status-label">命</span><span style="font-size:11px">❤️❤️❤️</span></div>
+      <div class="miracle-slot active">
+        <div class="miracle-card-mini">
+          <div class="miracle-img">⚡</div>
+          <div><div class="miracle-name">電子レンジ召喚</div><div class="miracle-cost">旨味3</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hand-area">
+  <div class="hand-scroll">
+    <div class="hand-card type-attack selected"><div class="hand-card-img">🍗</div><div class="hand-card-val" style="color:#CC4400">攻9</div></div>
+    <div class="hand-card type-extra selected"><div class="hand-card-img">🫙</div><div class="hand-card-val" style="color:#CC8800">+6</div></div>
+    <div class="hand-card type-defense"><div class="hand-card-img">🥬</div><div class="hand-card-val" style="color:#2255AA">守10</div></div>
+    <div class="hand-card type-miracle"><div class="hand-card-img">⚡</div><div class="hand-card-val" style="color:#6644AA">MP3</div></div>
+    <div class="hand-card type-item"><div class="hand-card-img">🍵</div><div class="hand-card-val" style="color:#226644">回復</div></div>
+    <div class="hand-card type-reflect"><div class="hand-card-img">🍱</div><div class="hand-card-val" style="color:#CC4499">反射</div></div>
+    <div class="hand-card type-attack"><div class="hand-card-img">🌊</div><div class="hand-card-val" style="color:#CC4400">攻9</div></div>
+    <div class="hand-card type-defense"><div class="hand-card-img">🍙</div><div class="hand-card-val" style="color:#2255AA">守8</div></div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <div class="bottom-log">相手が昆布出汁膜で5ダメージを防いだ！</div>
+  <button class="bottom-btn confirm">⚔️攻撃</button>
+  <button class="bottom-btn end-turn">終了</button>
+</div>
+
+<script>
+document.querySelectorAll('.hand-card').forEach(card => {
+  card.addEventListener('click', function() {
+    if (!this.classList.contains('type-miracle')) {
+      this.classList.toggle('selected');
+    }
+  });
+});
+</script>
+</body>
+</html>

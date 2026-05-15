@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>弁当箱大戦</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background: #1a1a1a;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ===== 画面共通 ===== */
+  .screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+  .screen.active { display: flex; }
+
+  /* ===== タイトル画面 ===== */
+  #screen-title {
+    background: #111;
+    justify-content: space-between;
+  }
+
+  .title-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .title-overlay {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 24px 16px 32px;
+  }
+
+  .title-logo {
+    width: 92%;
+    max-width: 440px;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.7));
+    animation: logoIn 0.8s ease both;
+  }
+
+  @keyframes logoIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .title-spacer { flex: 1; }
+
+  .start-btn-wrap {
+    width: 88%;
+    max-width: 400px;
+    cursor: pointer;
+    animation: btnPulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+  }
+
+  @keyframes btnPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  .start-btn-wrap img { width: 100%; display: block; }
+
+  /* ===== 名前入力・マッチング画面 ===== */
+  #screen-match {
+    background: linear-gradient(180deg, #3D2B10 0%, #1A1200 100%);
+    overflow: hidden;
+  }
+
+  .match-header {
+    background: #4A9B4A;
+    width: 100%;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    background: #2D7A2D;
+    border: none;
+    color: white;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .match-header-title {
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .match-scroll {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    padding: 16px;
+    scrollbar-width: none;
+  }
+  .match-scroll::-webkit-scrollbar { display: none; }
+
+  /* 名前入力 */
+  .input-section {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,200,100,0.3);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .input-label {
+    color: #FFD080;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .name-input {
+    width: 100%;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,200,100,0.5);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    outline: none;
+  }
+
+  .name-input::placeholder { color: rgba(255,255,255,0.4); }
+  .name-input:focus { border-color: #FFD080; background: rgba(255,255,255,0.2); }
+
+  /* マッチングボタン */
+  .match-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #FF6600, #CC4400);
+    border: 3px solid #FF9944;
+    border-radius: 14px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 900;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(255,102,0,0.4);
+    transition: all 0.15s;
+    letter-spacing: 2px;
+  }
+
+  .match-btn:active { transform: scale(0.97); box-shadow: none; }
+
+  .match-btn.waiting {
+    background: linear-gradient(135deg, #888, #555);
+    border-color: #AAA;
+    animation: waitPulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes waitPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* 遊び方 */
+  .howto-section {
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,200,100,0.2);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .howto-title {
+    color: #FFD080;
+    font-size: 14px;
+    font-weight: 900;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+
+  .howto-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+
+  .howto-num {
+    background: #FF6600;
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .howto-text {
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  .howto-text strong {
+    color: #FFD080;
+    font-weight: 800;
+  }
+
+  .howto-divider {
+    height: 1px;
+    background: rgba(255,200,100,0.2);
+    margin: 12px 0;
+  }
+
+  .life-system {
+    background: rgba(255,102,0,0.15);
+    border: 1px solid rgba(255,102,0,0.3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+  }
+
+  .life-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+
+  .life-row:last-child { margin-bottom: 0; }
+
+  .life-badge {
+    background: #FF6600;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .life-badge.hp40 { background: #CC2222; }
+  .life-badge.hp20 { background: #CC6600; }
+  .life-badge.hp10 { background: #886600; }
+
+  .life-desc { color: rgba(255,255,255,0.8); font-size: 11px; }
+
+  /* ===== 演出オーバーレイ ===== */
+  #overlay-result {
+    position: fixed;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 540px;
+    height: 100%;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  #overlay-result.active { display: flex; }
+
+  .result-img {
+    width: 90%;
+    max-width: 440px;
+    animation: resultIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.8));
+  }
+
+  @keyframes resultIn {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .result-sub {
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    animation: fadeIn 0.5s 0.3s both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .result-close {
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 12px;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 10px 32px;
+    cursor: pointer;
+    animation: fadeIn 0.5s 0.5s both;
+  }
+
+  /* デモ用ボタン */
+  .demo-btns {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 50;
+    max-width: 540px;
+  }
+
+  .demo-btn {
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== タイトル画面 ===== -->
+<div id="screen-title" class="screen active">
+  <img class="title-bg" src="images/ui/title_bg.png" alt="背景">
+  <div class="title-overlay">
+    <img class="title-logo" src="images/ui/title_logo.png" alt="弁当箱大戦">
+    <div class="title-spacer"></div>
+    <div class="start-btn-wrap" onclick="showScreen('match')">
+      <img src="images/ui/btn_gamestart.png" alt="ゲームスタート">
+    </div>
+  </div>
+</div>
+
+<!-- ===== 名前入力・マッチング画面 ===== -->
+<div id="screen-match" class="screen">
+  <div class="match-header">
+    <button class="back-btn" onclick="showScreen('title')">← 戻る</button>
+    <div class="match-header-title">🍱 弁当箱大戦</div>
+  </div>
+
+  <div class="match-scroll">
+
+    <!-- 名前入力 -->
+    <div class="input-section">
+      <span class="input-label">⚔️ プレイヤー名を入力</span>
+      <input class="name-input" type="text" placeholder="例：唐揚げ将軍" maxlength="12">
+    </div>
+
+    <!-- マッチングボタン -->
+    <button class="match-btn" id="matchBtn" onclick="startMatch()">
+      ⚔️ マッチング開始
+    </button>
+
+    <!-- 遊び方 -->
+    <div class="howto-section">
+      <div class="howto-title">📖 遊び方</div>
+
+      <div class="howto-item">
+        <div class="howto-num">1</div>
+        <div class="howto-text"><strong>陣営を選んで</strong>バトル開始！和食・洋食・中華・エスニックの4陣営からひとつを選びます。各陣営にはステータス補正があります。</div>
+      </div>
+
+      <div class="howto-item">
+        <div class="howto-num">2</div>
+        <div class="howto-text"><strong>カードをランダムドロー</strong>して戦います。80種類のカードの中からランダムに抽選。手札上限は8枚。</div>
+      </div>
+
+      <div class="howto-item">
+        <div class="howto-num">3</div>
+        <div class="howto-text">自分のターンに<strong>手札から好きなだけカードを使用</strong>できます。攻撃・防御・追加攻撃・奇跡・アイテム・反射の6種類。</div>
+      </div>
+
+      <div class="howto-item">
+        <div class="howto-num">4</div>
+        <div class="howto-text"><strong>「食べる」</strong>を使うと手札のカードをその試合から除外。弱いカードを食べることで、後半に強いカードだけが引けるようになります。</div>
+      </div>
+
+      <div class="howto-item">
+        <div class="howto-num">5</div>
+        <div class="howto-text">各ターンの操作は<strong>20秒以内</strong>。時間切れはターンエンド扱いになります。</div>
+      </div>
+
+      <div class="howto-divider"></div>
+
+      <div class="howto-title" style="font-size:13px;margin-bottom:10px;">❤️ ライフシステム</div>
+
+      <div class="life-system">
+        <div class="life-row">
+          <span class="life-badge hp40">HP40</span>
+          <span class="life-desc">試合開始時のHP。ここからスタート！</span>
+        </div>
+        <div class="life-row">
+          <span class="life-badge hp20">HP0→20</span>
+          <span class="life-desc">🍳 <strong style="color:#FFD080">朝ごはん完食！</strong> HP20で復活</span>
+        </div>
+        <div class="life-row">
+          <span class="life-badge hp10">HP0→10</span>
+          <span class="life-desc">🍱 <strong style="color:#FFD080">昼食完食！</strong> HP10で復活</span>
+        </div>
+        <div class="life-row">
+          <span class="life-badge" style="background:#8B0000">HP0→敗北</span>
+          <span class="life-desc">🎉 <strong style="color:#FFD080">ごちそうさまでした！</strong> 試合終了</span>
+        </div>
+      </div>
+
+      <div class="howto-divider"></div>
+
+      <div class="howto-item">
+        <div class="howto-num" style="background:#9966CC">★</div>
+        <div class="howto-text"><strong>奇跡カード</strong>は旨味（MP）を消費して使います。一度引いた奇跡カードは手札に固定され、旨味があれば毎ターン使えます。</div>
+      </div>
+
+      <div class="howto-item">
+        <div class="howto-num" style="background:#4488CC">属</div>
+        <div class="howto-text"><strong>属性相性</strong>あり。🔥揚げ物→🌊出汁→🌿薬味→🔥の三角関係。⚡発酵→🌸甘味→🍚米→⚡の三角関係。属性が弱点に当たると防御できません。</div>
+      </div>
+
+    </div>
+
+    <div style="height: 20px;"></div>
+  </div>
+</div>
+
+<!-- ===== 演出オーバーレイ ===== -->
+<div id="overlay-result">
+  <img class="result-img" id="resultImg" src="" alt="">
+  <div class="result-sub" id="resultSub"></div>
+  <button class="result-close" onclick="closeResult()">続ける</button>
+</div>
+
+<!-- デモ用ボタン（開発確認用） -->
+<div class="demo-btns">
+  <button class="demo-btn" onclick="showResult('morning')">朝ごはん完食</button>
+  <button class="demo-btn" onclick="showResult('lunch')">昼食完食</button>
+  <button class="demo-btn" onclick="showResult('finish')">ごちそうさま</button>
+</div>
+
+<script>
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  let matching = false;
+  function startMatch() {
+    const name = document.querySelector('.name-input').value.trim();
+    if (!name) {
+      alert('プレイヤー名を入力してください！');
+      return;
+    }
+    const btn = document.getElementById('matchBtn');
+    if (!matching) {
+      matching = true;
+      btn.classList.add('waiting');
+      btn.textContent = '⏳ マッチング中...';
+      // Firebase接続処理をここに追加予定
+    } else {
+      matching = false;
+      btn.classList.remove('waiting');
+      btn.textContent = '⚔️ マッチング開始';
+    }
+  }
+
+  function showResult(type) {
+    const overlay = document.getElementById('overlay-result');
+    const img = document.getElementById('resultImg');
+    const sub = document.getElementById('resultSub');
+
+    const data = {
+      morning: { src: '1000021026.png', text: '相手のHP40→0！次はHP20で復活します' },
+      lunch:   { src: '1000021024.png', text: '相手のHP20→0！次はHP10で復活します' },
+      finish:  { src: '1000021025.png', text: '相手のHPを全て削りきった！あなたの勝利！' }
+    };
+
+    img.src = data[type].src;
+    sub.textContent = data[type].text;
+    overlay.classList.add('active');
+
+    // アニメーションリセット
+    img.style.animation = 'none';
+    img.offsetHeight;
+    img.style.animation = '';
+  }
+
+  function closeResult() {
+    document.getElementById('overlay-result').classList.remove('active');
+  }
+</script>
+
+</body>
+</html>
